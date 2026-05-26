@@ -51,27 +51,57 @@ async def _call_llm(messages: list[dict], temperature: float = 0.7) -> str:
         "HTTP-Referer": "https://pygame-apc.web.app",
         "X-Title": "Pygame-APC",
     }
-    payload = {
-        "model": settings.openrouter_model,
-        "messages": messages,
-        "temperature": temperature,
-    }
-    async with httpx.AsyncClient(timeout=300.0) as client:
-        response = await client.post(OPENROUTER_API_URL, headers=headers, json=payload)
-        response.raise_for_status()
-        data = response.json()
+    
+    # Lista de modelos para tentar em caso de falha (404, 429 ou erro de modelo inválido)
+    models_to_try = [settings.openrouter_model]
+    
+    # Adiciona fallbacks caso o principal não seja openrouter/free
+    if settings.openrouter_model != "openrouter/free":
+        models_to_try.append("openrouter/free")
         
-        # Tratamento de erro detalhado caso a API do OpenRouter retorne erro de créditos, limite ou bloqueio
-        if "error" in data:
-            error_msg = data["error"].get("message", "Erro desconhecido retornado pelo OpenRouter.")
-            logger.error("Erro retornado pelo OpenRouter: %s", data["error"])
-            raise ValueError(f"OpenRouter: {error_msg}")
+    fallback_list = [
+        "openai/gpt-oss-120b:free",
+        "nvidia/nemotron-3-super-120b-a12b:free",
+        "meta-llama/llama-3.3-70b-instruct:free",
+        "meta-llama/llama-3.2-3b-instruct:free"
+    ]
+    for model in fallback_list:
+        if model not in models_to_try:
+            models_to_try.append(model)
             
-        if "choices" not in data or not data["choices"]:
-            logger.error("Resposta inesperada da API OpenRouter: %s", data)
-            raise ValueError("A resposta da API OpenRouter nao contem opcoes validas ('choices'). Verifique os seus creditos ou se o topico foi bloqueado por politicas de seguranca do provedor do modelo.")
+    last_exception = None
+    
+    for model in models_to_try:
+        logger.info("Tentando chamada a LLM com o modelo: %s", model)
+        payload = {
+            "model": model,
+            "messages": messages,
+            "temperature": temperature,
+        }
+        try:
+            async with httpx.AsyncClient(timeout=300.0) as client:
+                response = await client.post(OPENROUTER_API_URL, headers=headers, json=payload)
+                response.raise_for_status()
+                data = response.json()
+                
+                if "error" in data:
+                    error_msg = data["error"].get("message", "Erro desconhecido retornado pelo OpenRouter.")
+                    logger.error("Erro retornado pelo OpenRouter para o modelo %s: %s", model, data["error"])
+                    raise ValueError(f"OpenRouter ({model}): {error_msg}")
+                    
+                if "choices" not in data or not data["choices"]:
+                    logger.error("Resposta inesperada da API OpenRouter para o modelo %s: %s", model, data)
+                    raise ValueError(f"OpenRouter ({model}): A resposta nao contem opcoes validas ('choices').")
+                    
+                logger.info("Chamada a LLM concluida com sucesso usando o modelo: %s", model)
+                return data["choices"][0]["message"]["content"]
+                
+        except (httpx.HTTPStatusError, httpx.RequestError, ValueError) as e:
+            logger.warning("Falha ao usar o modelo %s: %s", model, e)
+            last_exception = e
+            continue
             
-        return data["choices"][0]["message"]["content"]
+    raise ValueError(f"Todos os modelos da API do OpenRouter falharam. Ultimo erro: {last_exception}")
 
 
 def _parse_problem_json(raw: str) -> dict:

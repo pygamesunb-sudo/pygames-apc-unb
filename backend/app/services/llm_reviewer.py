@@ -147,35 +147,62 @@ async def _call_reviewer_llm(messages: list[dict]) -> dict:
         "HTTP-Referer": "https://pygame-apc.web.app",
         "X-Title": "Pygame-APC",
     }
-    payload = {
-        "model": settings.openrouter_model,
-        "messages": messages,
-        "temperature": 0.3,
-    }
-    async with httpx.AsyncClient(timeout=120.0) as client:
-        response = await client.post(OPENROUTER_API_URL, headers=headers, json=payload)
-        response.raise_for_status()
-        data = response.json()
+    
+    models_to_try = [settings.openrouter_model]
+    if settings.openrouter_model != "openrouter/free":
+        models_to_try.append("openrouter/free")
         
-        if "error" in data:
-            error_msg = data["error"].get("message", "Erro desconhecido retornado pelo OpenRouter no Revisor.")
-            logger.error("Erro retornado pelo OpenRouter no Revisor: %s", data["error"])
-            raise ValueError(f"OpenRouter Revisor: {error_msg}")
+    fallback_list = [
+        "openai/gpt-oss-120b:free",
+        "nvidia/nemotron-3-super-120b-a12b:free",
+        "meta-llama/llama-3.3-70b-instruct:free",
+        "meta-llama/llama-3.2-3b-instruct:free"
+    ]
+    for model in fallback_list:
+        if model not in models_to_try:
+            models_to_try.append(model)
             
-        if "choices" not in data or not data["choices"]:
-            logger.error("Resposta inesperada no Revisor: %s", data)
-            raise ValueError("O revisor nao retornou opcoes validas ('choices'). O tema fornecido pode ter sido bloqueado pelas politicas de seguranca do modelo.")
-            
-        raw = data["choices"][0]["message"]["content"]
-        
+    last_exception = None
+    
+    for model in models_to_try:
+        logger.info("Revisor tentando chamada a LLM com o modelo: %s", model)
+        payload = {
+            "model": model,
+            "messages": messages,
+            "temperature": 0.3,
+        }
         try:
-            return json.loads(raw)
-        except json.JSONDecodeError:
-            start = raw.find("{")
-            end = raw.rfind("}") + 1
-            if start != -1 and end > start:
-                return json.loads(raw[start:end])
-            raise ValueError("A LLM do revisor nao retornou um JSON valido.")
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                response = await client.post(OPENROUTER_API_URL, headers=headers, json=payload)
+                response.raise_for_status()
+                data = response.json()
+                
+                if "error" in data:
+                    error_msg = data["error"].get("message", "Erro desconhecido retornado pelo OpenRouter no Revisor.")
+                    logger.error("Erro retornado pelo OpenRouter no Revisor para o modelo %s: %s", model, data["error"])
+                    raise ValueError(f"OpenRouter Revisor ({model}): {error_msg}")
+                    
+                if "choices" not in data or not data["choices"]:
+                    logger.error("Resposta inesperada no Revisor para o modelo %s: %s", model, data)
+                    raise ValueError(f"OpenRouter Revisor ({model}): O revisor nao retornou opcoes validas ('choices').")
+                    
+                raw = data["choices"][0]["message"]["content"]
+                
+                try:
+                    return json.loads(raw)
+                except json.JSONDecodeError:
+                    start = raw.find("{")
+                    end = raw.rfind("}") + 1
+                    if start != -1 and end > start:
+                        return json.loads(raw[start:end])
+                    raise ValueError("A LLM do revisor nao retornou um JSON valido.")
+                    
+        except (httpx.HTTPStatusError, httpx.RequestError, ValueError) as e:
+            logger.warning("Revisor: Falha ao usar o modelo %s: %s", model, e)
+            last_exception = e
+            continue
+            
+    raise ValueError(f"Todos os modelos do Revisor da API do OpenRouter falharam. Ultimo erro: {last_exception}")
 
 
 async def review_problem(problem_data: dict, reviewer_index: int) -> dict:

@@ -28,9 +28,11 @@ app.include_router(problems.router)
 app.include_router(submissions.router)
 app.include_router(users.router)
 
-
+@app.on_event("startup")
+def startup_event():
+    logger = logging.getLogger(__name__)
+    logger.info("FastAPI startup event triggered. Settings loaded from environment/local .env.")
 
 @app.get("/health", tags=["health"])
 async def health_check():
-    # Force uvicorn reload to load the new TESTING_BYPASS_AUTH from .env
     return {"status": "ok", "version": "0.1.0"}

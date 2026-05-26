@@ -8,3 +8,5 @@ firebase-admin>=6.5.0
 python-multipart>=0.0.9
 pytest>=8.2.1
 pytest-asyncio>=0.23.7
+firebase-functions>=0.1.0
+a2wsgi>=1.10.0
