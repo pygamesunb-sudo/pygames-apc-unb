@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import DoodleNinja from './minigames/DoodleNinja';
 import SnakePy from './minigames/SnakePy';
 import BugInvaders from './minigames/BugInvaders';
+import { updateGameScore } from '../services/api';
 
 const GAME_VIEWS = {
   MENU: 'menu',
@@ -10,7 +11,7 @@ const GAME_VIEWS = {
   INVADERS: 'invaders'
 };
 
-export default function MiniGame({ visible, isProblemReady, onGoToExercise }) {
+export default function MiniGame({ visible, isProblemReady, onGoToExercise, userProfile }) {
   const [activeGame, setActiveGame] = useState(GAME_VIEWS.MENU);
   const [highScores, setHighScores] = useState({
     doodle: 0,
@@ -21,23 +22,39 @@ export default function MiniGame({ visible, isProblemReady, onGoToExercise }) {
   const [gameOverScore, setGameOverScore] = useState(null);
   const [isNewRecord, setIsNewRecord] = useState(false);
 
-  // Carrega pontuações máximas históricas do localStorage
+  // Carrega pontuações máximas históricas do localStorage ou sincroniza com o banco de dados do Firebase
   useEffect(() => {
-    const cachedDoodle = localStorage.getItem('apc_highscore_doodle') || 0;
-    const cachedSnake = localStorage.getItem('apc_highscore_snake') || 0;
-    const cachedInvaders = localStorage.getItem('apc_highscore_invaders') || 0;
+    if (userProfile && userProfile.games) {
+      setHighScores({
+        doodle: userProfile.games.doodle || 0,
+        snake: userProfile.games.snake || 0,
+        invaders: userProfile.games.invaders || 0
+      });
+    } else {
+      const cachedDoodle = localStorage.getItem('apc_highscore_doodle') || 0;
+      const cachedSnake = localStorage.getItem('apc_highscore_snake') || 0;
+      const cachedInvaders = localStorage.getItem('apc_highscore_invaders') || 0;
 
-    setHighScores({
-      doodle: parseInt(cachedDoodle, 10),
-      snake: parseInt(cachedSnake, 10),
-      invaders: parseInt(cachedInvaders, 10)
-    });
-  }, []);
+      setHighScores({
+        doodle: parseInt(cachedDoodle, 10),
+        snake: parseInt(cachedSnake, 10),
+        invaders: parseInt(cachedInvaders, 10)
+      });
+    }
+  }, [userProfile]);
 
-  const handleGameOver = useCallback((gameKey, finalScore) => {
+  const handleGameOver = useCallback(async (gameKey, finalScore) => {
     setGameOverScore(finalScore);
     
-    // Atualiza recorde se necessário
+    // Atualiza recorde no banco do Firebase de forma assincrona
+    try {
+      await updateGameScore(gameKey, finalScore);
+      console.log(`[Arcade] Score de ${gameKey} atualizado com sucesso no Firebase.`);
+    } catch (err) {
+      console.error("[Arcade] Falha ao sincronizar score no Firebase:", err);
+    }
+
+    // Sincroniza localmente se necessário
     const currentHigh = highScores[gameKey];
     if (finalScore > currentHigh) {
       setIsNewRecord(true);
@@ -48,6 +65,18 @@ export default function MiniGame({ visible, isProblemReady, onGoToExercise }) {
       setIsNewRecord(false);
     }
   }, [highScores]);
+
+  const handleDoodleGameOver = useCallback((score) => {
+    handleGameOver('doodle', score);
+  }, [handleGameOver]);
+
+  const handleSnakeGameOver = useCallback((score) => {
+    handleGameOver('snake', score);
+  }, [handleGameOver]);
+
+  const handleInvadersGameOver = useCallback((score) => {
+    handleGameOver('invaders', score);
+  }, [handleGameOver]);
 
   const handleRestart = () => {
     setGameOverScore(null);
@@ -187,7 +216,7 @@ export default function MiniGame({ visible, isProblemReady, onGoToExercise }) {
           <div className="arcade-screen-container">
             {activeGame === GAME_VIEWS.DOODLE && (
               <DoodleNinja 
-                onGameOver={(score) => handleGameOver('doodle', score)} 
+                onGameOver={handleDoodleGameOver} 
                 onBackToMenu={handleBackToHub} 
                 isProblemReady={isProblemReady}
                 onGoToExercise={onGoToExercise}
@@ -195,7 +224,7 @@ export default function MiniGame({ visible, isProblemReady, onGoToExercise }) {
             )}
             {activeGame === GAME_VIEWS.SNAKE && (
               <SnakePy 
-                onGameOver={(score) => handleGameOver('snake', score)} 
+                onGameOver={handleSnakeGameOver} 
                 onBackToMenu={handleBackToHub} 
                 isProblemReady={isProblemReady}
                 onGoToExercise={onGoToExercise}
@@ -203,7 +232,7 @@ export default function MiniGame({ visible, isProblemReady, onGoToExercise }) {
             )}
             {activeGame === GAME_VIEWS.INVADERS && (
               <BugInvaders 
-                onGameOver={(score) => handleGameOver('invaders', score)} 
+                onGameOver={handleInvadersGameOver} 
                 onBackToMenu={handleBackToHub} 
                 isProblemReady={isProblemReady}
                 onGoToExercise={onGoToExercise}

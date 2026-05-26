@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 
-from app.routers import problems, submissions
+from app.routers import problems, submissions, users
 from app.config import settings
 
 logging.basicConfig(
@@ -26,8 +26,11 @@ app.add_middleware(
 
 app.include_router(problems.router)
 app.include_router(submissions.router)
+app.include_router(users.router)
+
 
 
 @app.get("/health", tags=["health"])
 async def health_check():
+    # Force uvicorn reload to load the new TESTING_BYPASS_AUTH from .env
     return {"status": "ok", "version": "0.1.0"}

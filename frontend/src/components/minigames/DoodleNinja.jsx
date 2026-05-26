@@ -32,6 +32,11 @@ export default function DoodleNinja({ onGameOver, onBackToMenu, isProblemReady, 
   const canvasRef = useRef(null);
   const stateRef = useRef(null);
   const animRef = useRef(null);
+  const onGameOverRef = useRef(onGameOver);
+
+  useEffect(() => {
+    onGameOverRef.current = onGameOver;
+  }, [onGameOver]);
   
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
@@ -340,7 +345,7 @@ export default function DoodleNinja({ onGameOver, onBackToMenu, isProblemReady, 
     function loseLife(s) {
       s.player.lives--; setLives(s.player.lives);
       if (s.player.lives <= 0) {
-        s.isGameOver = true; setIsDead(true); onGameOver(s.score);
+        s.isGameOver = true; setIsDead(true); onGameOverRef.current(s.score);
       } else {
         s.player.invulnerableFrames = 120;
         const vps = s.platforms.filter(plat => plat.y - s.cameraY > 100 && plat.y - s.cameraY < CANVAS_H - 100 && !plat.broken);
@@ -356,7 +361,7 @@ export default function DoodleNinja({ onGameOver, onBackToMenu, isProblemReady, 
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
     };
-  }, [initGame, spawnPlatform, onGameOver, handleShoot]);
+  }, [initGame, spawnPlatform, handleShoot]);
 
   // Handlers mobile virtuais
   const handleMoveLeft = (active) => {

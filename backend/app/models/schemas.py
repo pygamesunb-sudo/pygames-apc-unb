@@ -53,3 +53,6 @@ class SubmitCodeResponse(BaseModel):
     all_passed: bool
     results: list[TestResult]
     score: int = Field(..., description="Pontuacao de 0 a 100.")
+    coding_points: int | None = Field(default=None, description="Pontos totais de programacao do usuario.")
+    total_score: int | None = Field(default=None, description="Pontuacao consolidada geral do usuario.")
+

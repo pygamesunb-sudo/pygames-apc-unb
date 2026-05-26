@@ -13,6 +13,11 @@ export default function SnakePy({ onGameOver, onBackToMenu, isProblemReady, onGo
   const canvasRef = useRef(null);
   const stateRef = useRef(null);
   const animRef = useRef(null);
+  const onGameOverRef = useRef(onGameOver);
+
+  useEffect(() => {
+    onGameOverRef.current = onGameOver;
+  }, [onGameOver]);
 
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
@@ -341,7 +346,7 @@ export default function SnakePy({ onGameOver, onBackToMenu, isProblemReady, onGo
     function loseLife(s) {
       s.lives--; setLives(s.lives);
       if (s.lives <= 0) {
-        s.isGameOver = true; onGameOver(s.score);
+        s.isGameOver = true; onGameOverRef.current(s.score);
       } else {
         const snakeReset = [{ x: 12, y: 18 }, { x: 12, y: 19 }, { x: 12, y: 20 }];
         s.snake = snakeReset; s.direction = { x: 0, y: -1 }; s.nextDirection = { x: 0, y: -1 };
@@ -357,7 +362,7 @@ export default function SnakePy({ onGameOver, onBackToMenu, isProblemReady, onGo
       cancelAnimationFrame(animRef.current);
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, [initGame, spawnFoodsForTokens, spawnBugsForScript, replenishFood, onGameOver, selectScriptForLevel]);
+  }, [initGame, spawnFoodsForTokens, spawnBugsForScript, replenishFood, selectScriptForLevel]);
 
   const handleVirtualDirection = (dx, dy) => {
     if (!stateRef.current) return;

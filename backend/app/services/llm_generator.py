@@ -56,7 +56,7 @@ async def _call_llm(messages: list[dict], temperature: float = 0.7) -> str:
         "messages": messages,
         "temperature": temperature,
     }
-    async with httpx.AsyncClient(timeout=120.0) as client:
+    async with httpx.AsyncClient(timeout=300.0) as client:
         response = await client.post(OPENROUTER_API_URL, headers=headers, json=payload)
         response.raise_for_status()
         data = response.json()

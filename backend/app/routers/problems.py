@@ -2,19 +2,20 @@ import asyncio
 import logging
 import uuid
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 
 from app.models.schemas import GenerateProblemRequest, GeneratedProblem, TestCase
 from app.services.llm_generator import generate_problem
 from app.services.llm_reviewer import review_problem
 from app.services import firebase_service
+from app.dependencies import get_current_user
 
 router = APIRouter(prefix="/api/problems", tags=["problems"])
 logger = logging.getLogger(__name__)
 
 
 @router.post("/generate", response_model=GeneratedProblem, status_code=201)
-async def generate_problem_endpoint(body: GenerateProblemRequest):
+async def generate_problem_endpoint(body: GenerateProblemRequest, user: dict = Depends(get_current_user)):
     """
     Gera um novo problema de programacao baseado no topico e dificuldade fornecidos.
     A pipeline executa:
@@ -108,7 +109,7 @@ async def generate_problem_endpoint(body: GenerateProblemRequest):
 
 
 @router.get("", response_model=list[GeneratedProblem])
-async def list_problems_endpoint():
+async def list_problems_endpoint(user: dict = Depends(get_current_user)):
     """
     Retorna uma lista com todos os problemas gerados e salvos.
     """

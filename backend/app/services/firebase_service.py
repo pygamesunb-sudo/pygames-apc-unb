@@ -27,9 +27,15 @@ def get_db():
                     firebase_admin.initialize_app(cred)
                     logger.info("Firebase Admin SDK inicializado com credenciais do arquivo.")
                 else:
-                    # Tenta inicializar com ADC. Se falhar, usa o fallback local em memoria.
-                    firebase_admin.initialize_app()
-                    logger.info("Firebase Admin SDK inicializado com Application Default Credentials.")
+                    import google.auth.credentials
+                    # Inicializa com AnonymousCredentials e o project_id explicito para satisfazer exigencia de credencial
+                    firebase_admin.initialize_app(
+                        credential=google.auth.credentials.AnonymousCredentials(),
+                        options={
+                            'projectId': settings.firebase_project_id
+                        }
+                    )
+                    logger.info("Firebase Admin SDK inicializado com AnonymousCredentials e ID do projeto explicito.")
             _db = firestore.client()
         except Exception as e:
             logger.warning(
@@ -45,6 +51,7 @@ def get_db():
 async def save_problem(problem_data: dict) -> str:
     """Salva o problema gerado no Firestore (ou em memoria se falhar) e retorna o ID do documento."""
     import uuid
+    global _use_local_fallback
     db = get_db()
     if db is None:
         doc_id = str(uuid.uuid4())
@@ -52,14 +59,23 @@ async def save_problem(problem_data: dict) -> str:
         logger.info("Problema salvo em MEMORIA LOCAL com ID: %s", doc_id)
         return doc_id
 
-    doc_ref = db.collection("problems").document()
-    doc_ref.set(problem_data)
-    logger.info("Problema salvo no Firestore com ID: %s", doc_ref.id)
-    return doc_ref.id
+    try:
+        doc_ref = db.collection("problems").document()
+        doc_ref.set(problem_data)
+        logger.info("Problema salvo no Firestore com ID: %s", doc_ref.id)
+        return doc_ref.id
+    except Exception as e:
+        logger.warning("Falha ao salvar no Firestore: %s. Ativando fallback local e salvando em memoria.", e)
+        _use_local_fallback = True
+        doc_id = str(uuid.uuid4())
+        _in_memory_db[doc_id] = problem_data
+        logger.info("Problema salvo em MEMORIA LOCAL (fallback) com ID: %s", doc_id)
+        return doc_id
 
 
 async def get_problem(problem_id: str) -> dict | None:
     """Busca um problema no Firestore (ou em memoria se falhar) pelo ID."""
+    global _use_local_fallback
     db = get_db()
     if db is None:
         problem = _in_memory_db.get(problem_id)
@@ -72,13 +88,15 @@ async def get_problem(problem_id: str) -> dict | None:
         if doc.exists:
             return doc.to_dict()
     except Exception as e:
-        logger.warning("Falha ao ler do Firestore: %s. Tentando na memoria local.", e)
+        logger.warning("Falha ao ler do Firestore: %s. Ativando fallback local e tentando na memoria.", e)
+        _use_local_fallback = True
         return _in_memory_db.get(problem_id)
     return None
 
 
 async def list_problems() -> list[dict]:
     """Retorna uma lista com todos os problemas salvos (Firestore ou memoria)."""
+    global _use_local_fallback
     db = get_db()
     problems = []
     if db is None:
@@ -111,7 +129,8 @@ async def list_problems() -> list[dict]:
             })
         return problems
     except Exception as e:
-        logger.warning("Falha ao listar do Firestore: %s. Usando memoria local.", e)
+        logger.warning("Falha ao listar do Firestore: %s. Ativando fallback local.", e)
+        _use_local_fallback = True
         for doc_id, problem in _in_memory_db.items():
             problems.append({
                 "problem_id": doc_id,
@@ -124,3 +143,283 @@ async def list_problems() -> list[dict]:
                 "test_cases": problem.get("test_cases", [])
             })
         return sorted(problems, key=lambda x: x["title"])
+
+
+# --- Sistema de Pontuação e Histórico de Usuários ---
+
+_in_memory_users = {}
+_in_memory_submissions = []
+
+
+async def get_user_profile_data(uid: str) -> dict:
+    """Recupera o perfil do usuario do Firestore ou memoria local. Se nao existir, cria um novo perfil."""
+    db = get_db()
+    if db is None:
+        if uid not in _in_memory_users:
+            _in_memory_users[uid] = {
+                "uid": uid,
+                "email": "",
+                "name": "Usuario Anonimo",
+                "coding_points": 0,
+                "total_score": 0,
+                "games": {
+                    "doodle": 0,
+                    "snake": 0,
+                    "invaders": 0
+                },
+                "solved_problems": []
+            }
+        return _in_memory_users[uid]
+
+    try:
+        user_ref = db.collection("users").document(uid)
+        doc = user_ref.get()
+        if doc.exists:
+            return doc.to_dict()
+        else:
+            # Cria o documento do usuario inicialmente
+            new_profile = {
+                "uid": uid,
+                "email": "",
+                "name": "Usuario Anonimo",
+                "coding_points": 0,
+                "total_score": 0,
+                "games": {
+                    "doodle": 0,
+                    "snake": 0,
+                    "invaders": 0
+                },
+                "solved_problems": []
+            }
+            user_ref.set(new_profile)
+            return new_profile
+    except Exception as e:
+        logger.warning("Falha ao ler perfil do Firestore: %s. Usando memoria local.", e)
+        if uid not in _in_memory_users:
+            _in_memory_users[uid] = {
+                "uid": uid,
+                "email": "",
+                "name": "Usuario Anonimo",
+                "coding_points": 0,
+                "total_score": 0,
+                "games": {
+                    "doodle": 0,
+                    "snake": 0,
+                    "invaders": 0
+                },
+                "solved_problems": []
+            }
+        return _in_memory_users[uid]
+
+
+async def save_submission_to_db(
+    uid: str,
+    email: str,
+    name: str,
+    problem_id: str,
+    problem_title: str,
+    code: str,
+    score: int,
+    all_passed: bool
+) -> dict:
+    """
+    Salva a submissao no Firestore e atualiza os pontos do usuario.
+    Retorna o perfil atualizado do usuario com seus novos pontos.
+    """
+    import uuid
+    from datetime import datetime
+    
+    submission_id = str(uuid.uuid4())
+    submission_data = {
+        "submission_id": submission_id,
+        "uid": uid,
+        "email": email,
+        "name": name,
+        "problem_id": problem_id,
+        "problem_title": problem_title,
+        "code": code,
+        "score": score,
+        "all_passed": all_passed,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+    db = get_db()
+    if db is None:
+        _in_memory_submissions.append(submission_data)
+        # Limita historico em memoria
+        if len(_in_memory_submissions) > 100:
+            _in_memory_submissions.pop(0)
+        
+        # Atualiza pontos em memoria
+        profile = await get_user_profile_data(uid)
+        profile["email"] = email
+        profile["name"] = name
+        
+        if all_passed and problem_id not in profile.get("solved_problems", []):
+            if "solved_problems" not in profile:
+                profile["solved_problems"] = []
+            profile["solved_problems"].append(problem_id)
+            profile["coding_points"] = profile.get("coding_points", 0) + 50
+            profile["total_score"] = profile["coding_points"] + sum(profile.get("games", {}).values())
+            
+        _in_memory_users[uid] = profile
+        return profile
+
+    try:
+        # Salva submissao
+        db.collection("submissions").document(submission_id).set(submission_data)
+        
+        # Atualiza perfil do usuario de forma direta
+        user_ref = db.collection("users").document(uid)
+        doc = user_ref.get()
+        profile = doc.to_dict() if doc.exists else {
+            "uid": uid,
+            "email": email,
+            "name": name,
+            "coding_points": 0,
+            "total_score": 0,
+            "games": {
+                "doodle": 0,
+                "snake": 0,
+                "invaders": 0
+            },
+            "solved_problems": []
+        }
+        
+        profile["email"] = email
+        profile["name"] = name
+        
+        # Concede 50 pontos apenas se resolveu 100% o exercicio pela primeira vez
+        solved_list = profile.get("solved_problems", [])
+        if all_passed and problem_id not in solved_list:
+            solved_list.append(problem_id)
+            profile["solved_problems"] = solved_list
+            profile["coding_points"] = profile.get("coding_points", 0) + 50
+            
+        # Recalcula total_score
+        games_dict = profile.get("games", {"doodle": 0, "snake": 0, "invaders": 0})
+        profile["total_score"] = profile.get("coding_points", 0) + sum(games_dict.values())
+        
+        user_ref.set(profile)
+        return profile
+    except Exception as e:
+        logger.exception("Erro ao salvar submissao no Firestore: %s", e)
+        # Fallback para memoria local em caso de erro no Firestore
+        global _use_local_fallback
+        _use_local_fallback = True
+        _in_memory_submissions.append(submission_data)
+        profile = await get_user_profile_data(uid)
+        profile["email"] = email
+        profile["name"] = name
+        if all_passed and problem_id not in profile.get("solved_problems", []):
+            profile["solved_problems"].append(problem_id)
+            profile["coding_points"] = profile.get("coding_points", 0) + 50
+            profile["total_score"] = profile["coding_points"] + sum(profile.get("games", {}).values())
+        _in_memory_users[uid] = profile
+        return profile
+
+
+async def update_user_game_score(uid: str, email: str, name: str, game_key: str, score: int) -> dict:
+    """
+    Atualiza o highscore do usuario em um determinado minigame e recalculao total_score.
+    Retorna o perfil atualizado do usuario.
+    """
+    db = get_db()
+    if db is None:
+        profile = await get_user_profile_data(uid)
+        profile["email"] = email
+        profile["name"] = name
+        games = profile.setdefault("games", {"doodle": 0, "snake": 0, "invaders": 0})
+        current_high = games.get(game_key, 0)
+        if score > current_high:
+            games[game_key] = score
+            profile["total_score"] = profile.get("coding_points", 0) + sum(games.values())
+            _in_memory_users[uid] = profile
+        return profile
+
+    try:
+        user_ref = db.collection("users").document(uid)
+        doc = user_ref.get()
+        profile = doc.to_dict() if doc.exists else {
+            "uid": uid,
+            "email": email,
+            "name": name,
+            "coding_points": 0,
+            "total_score": 0,
+            "games": {
+                "doodle": 0,
+                "snake": 0,
+                "invaders": 0
+            },
+            "solved_problems": []
+        }
+        
+        profile["email"] = email
+        profile["name"] = name
+        games = profile.setdefault("games", {"doodle": 0, "snake": 0, "invaders": 0})
+        current_high = games.get(game_key, 0)
+        
+        if score > current_high:
+            games[game_key] = score
+            profile["total_score"] = profile.get("coding_points", 0) + sum(games.values())
+            user_ref.set(profile)
+            logger.info("Highscore de %s no jogo %s atualizado para %d!", name, game_key, score)
+        return profile
+    except Exception as e:
+        logger.exception("Erro ao salvar recorde de jogo no Firestore: %s", e)
+        # Fallback local
+        global _use_local_fallback
+        _use_local_fallback = True
+        profile = await get_user_profile_data(uid)
+        profile["email"] = email
+        profile["name"] = name
+        games = profile.setdefault("games", {"doodle": 0, "snake": 0, "invaders": 0})
+        current_high = games.get(game_key, 0)
+        if score > current_high:
+            games[game_key] = score
+            profile["total_score"] = profile.get("coding_points", 0) + sum(games.values())
+            _in_memory_users[uid] = profile
+        return profile
+
+
+async def get_leaderboard_data() -> list[dict]:
+    """Retorna os melhores usuarios ordenados por total_score descendente."""
+    db = get_db()
+    if db is None:
+        users = list(_in_memory_users.values())
+        return sorted(users, key=lambda x: x.get("total_score", 0), reverse=True)[:50]
+
+    try:
+        users_ref = db.collection("users").order_by("total_score", direction=firestore.Query.DESCENDING).limit(50)
+        docs = users_ref.get()
+        leaderboard = []
+        for doc in docs:
+            leaderboard.append(doc.to_dict())
+        return leaderboard
+    except Exception as e:
+        logger.warning("Falha ao obter ranking do Firestore: %s. Ativando fallback local.", e)
+        global _use_local_fallback
+        _use_local_fallback = True
+        users = list(_in_memory_users.values())
+        return sorted(users, key=lambda x: x.get("total_score", 0), reverse=True)[:50]
+
+
+async def get_all_submissions_history() -> list[dict]:
+    """Retorna as submissoes mais recentes de todos os usuarios."""
+    db = get_db()
+    if db is None:
+        return sorted(_in_memory_submissions, key=lambda x: x.get("timestamp", ""), reverse=True)[:50]
+
+    try:
+        sub_ref = db.collection("submissions").order_by("timestamp", direction=firestore.Query.DESCENDING).limit(50)
+        docs = sub_ref.get()
+        submissions = []
+        for doc in docs:
+            submissions.append(doc.to_dict())
+        return submissions
+    except Exception as e:
+        logger.warning("Falha ao obter submissoes do Firestore: %s. Ativando fallback local.", e)
+        global _use_local_fallback
+        _use_local_fallback = True
+        return sorted(_in_memory_submissions, key=lambda x: x.get("timestamp", ""), reverse=True)[:50]
+

@@ -14,6 +14,11 @@ export default function BugInvaders({ onGameOver, onBackToMenu, isProblemReady, 
   const canvasRef = useRef(null);
   const stateRef = useRef(null);
   const animRef = useRef(null);
+  const onGameOverRef = useRef(onGameOver);
+
+  useEffect(() => {
+    onGameOverRef.current = onGameOver;
+  }, [onGameOver]);
 
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
@@ -142,7 +147,7 @@ export default function BugInvaders({ onGameOver, onBackToMenu, isProblemReady, 
             if (!inv.alive) return;
             inv.y += 18;
             if (inv.y + inv.h >= player.y) {
-              s.isGameOver = true; setIsDead(true); onGameOver(s.score);
+              s.isGameOver = true; setIsDead(true); onGameOverRef.current(s.score);
             }
           });
         }
@@ -231,7 +236,7 @@ export default function BugInvaders({ onGameOver, onBackToMenu, isProblemReady, 
     function loseLife(s) {
       s.player.lives--; setLives(s.player.lives);
       if (s.player.lives <= 0) {
-        s.isGameOver = true; setIsDead(true); onGameOver(s.score);
+        s.isGameOver = true; setIsDead(true); onGameOverRef.current(s.score);
       } else {
         s.player.x = CANVAS_W / 2 - PLAYER_W / 2; s.player.invulnerableFrames = 90; s.enemyBullets = [];
       }
@@ -243,7 +248,7 @@ export default function BugInvaders({ onGameOver, onBackToMenu, isProblemReady, 
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
     };
-  }, [initGame, generateInvaders, onGameOver, handleShoot]);
+  }, [initGame, generateInvaders, handleShoot]);
 
   // Handlers mobile
   const handleMoveLeft = (active) => {
