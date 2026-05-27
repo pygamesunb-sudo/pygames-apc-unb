@@ -67,11 +67,25 @@ export default function App() {
         try {
           const profile = await getUserProfile();
           setUserProfile(profile);
+          // Sincroniza API Key e ativacao do Gemini do Firestore com o localStorage
+          if (profile.gemini_api_key !== undefined) {
+            if (profile.gemini_api_key) {
+              localStorage.setItem('gemini_api_key', profile.gemini_api_key);
+            } else {
+              localStorage.removeItem('gemini_api_key');
+            }
+          }
+          if (profile.use_custom_key !== undefined) {
+            localStorage.setItem('use_custom_key', profile.use_custom_key ? 'true' : 'false');
+          }
         } catch (err) {
           console.error("Falha ao carregar perfil do usuario logado:", err);
         }
       } else {
         setUserProfile(null);
+        // Limpa chaves locais ao deslogar
+        localStorage.removeItem('gemini_api_key');
+        localStorage.removeItem('use_custom_key');
       }
       setIsAuthLoading(false);
     });

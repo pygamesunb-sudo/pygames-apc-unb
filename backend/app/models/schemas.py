@@ -14,6 +14,14 @@ class GenerateProblemRequest(BaseModel):
         default="facil",
         description="Nivel de dificuldade do problema.",
     )
+    gemini_api_key: str | None = Field(
+        default=None,
+        description="Chave de API do Gemini do proprio usuario (opcional)."
+    )
+    use_custom_key: bool = Field(
+        default=False,
+        description="Se True, usa a chave de API fornecida pelo usuario para gerar o problema."
+    )
 
 
 class TestCase(BaseModel):

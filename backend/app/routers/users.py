@@ -64,3 +64,29 @@ async def get_leaderboard(user: dict = Depends(get_current_user)):
     """
     leaderboard = await firebase_service.get_leaderboard_data()
     return leaderboard
+
+
+class GeminiConfigRequest(BaseModel):
+    gemini_api_key: str | None = Field(default=None, description="Chave de API do Gemini do usuario (salva no Firestore).")
+    use_custom_key: bool = Field(default=False, description="Se deve usar a chave de API customizada.")
+
+
+@router.post("/gemini-config")
+async def update_gemini_config(body: GeminiConfigRequest, user: dict = Depends(get_current_user)):
+    """
+    Salva as configuracoes de API Key do Gemini do usuario no Firestore para sincronismo entre navegadores.
+    """
+    uid = user.get("uid")
+    profile = await firebase_service.get_user_profile_data(uid)
+    profile["gemini_api_key"] = body.gemini_api_key
+    profile["use_custom_key"] = body.use_custom_key
+    
+    # Salva no Firestore
+    db = firebase_service.get_db()
+    if db is not None:
+        user_ref = db.collection("users").document(uid)
+        user_ref.set(profile, timeout=5.0)
+    else:
+        firebase_service._in_memory_users[uid] = profile
+        
+    return {"status": "success", "profile": profile}

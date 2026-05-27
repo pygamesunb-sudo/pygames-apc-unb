@@ -34,7 +34,15 @@ api.interceptors.request.use(
  * @param {string} difficulty - 'facil' | 'medio' | 'dificil' | 'competitivo'
  */
 export async function generateProblem(topic, difficulty) {
-  const response = await api.post('/api/problems/generate', { topic, difficulty });
+  const gemini_api_key = localStorage.getItem('gemini_api_key') || null;
+  const use_custom_key = localStorage.getItem('use_custom_key') === 'true';
+
+  const response = await api.post('/api/problems/generate', { 
+    topic, 
+    difficulty,
+    gemini_api_key,
+    use_custom_key
+  });
   return response.data;
 }
 
@@ -90,6 +98,17 @@ export async function getLeaderboard() {
  */
 export async function getSubmissionsHistory() {
   const response = await api.get('/api/submissions/history');
+  return response.data;
+}
+
+/**
+ * Salva as configuracoes de API Key do Gemini do usuario no servidor.
+ */
+export async function saveGeminiConfig(gemini_api_key, use_custom_key) {
+  const response = await api.post('/api/users/gemini-config', {
+    gemini_api_key,
+    use_custom_key
+  });
   return response.data;
 }
 

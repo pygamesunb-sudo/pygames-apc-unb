@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Zap, Target, Trophy, Sword } from 'lucide-react';
-import { listProblems } from '../services/api';
+import { listProblems, saveGeminiConfig } from '../services/api';
 
 const DIFFICULTIES = [
   { id: 'facil',       label: 'Facil',       icon: Zap,    desc: 'Loops e condicionais simples' },
@@ -22,6 +22,8 @@ export default function Home({ onGenerate, onSelectProblem, isLoading }) {
   const [topic, setTopic] = useState('');
   const [difficulty, setDifficulty] = useState('facil');
   const [previousProblems, setPreviousProblems] = useState([]);
+  const [useCustomKey, setUseCustomKey] = useState(() => localStorage.getItem('use_custom_key') === 'true');
+  const [geminiApiKey, setGeminiApiKey] = useState(() => localStorage.getItem('gemini_api_key') || '');
 
   useEffect(() => {
     async function fetchProblems() {
@@ -104,6 +106,78 @@ export default function Home({ onGenerate, onSelectProblem, isLoading }) {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Painel da API Key do Gemini (Google AI Studio) */}
+        <div className="api-key-section" style={{
+          marginTop: '10px',
+          padding: '16px',
+          background: 'rgba(15, 23, 42, 0.4)',
+          borderRadius: '8px',
+          border: '1px solid rgba(99, 102, 241, 0.15)',
+          marginBottom: '20px'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <span style={{ fontSize: '0.85rem', color: '#f8fafc', fontWeight: 600 }}>
+              Usar sua própria API Key do Gemini
+            </span>
+            <label className="switch" style={{ display: 'inline-block', position: 'relative', width: '40px', height: '22px' }}>
+              <input 
+                type="checkbox" 
+                checked={useCustomKey} 
+                onChange={async (e) => {
+                  const val = e.target.checked;
+                  setUseCustomKey(val);
+                  localStorage.setItem('use_custom_key', val ? 'true' : 'false');
+                  try {
+                    await saveGeminiConfig(geminiApiKey || null, val);
+                  } catch (err) {
+                    console.error("Erro ao sincronizar ativacao do Gemini:", err);
+                  }
+                }} 
+                style={{ opacity: 0, width: 0, height: 0 }}
+              />
+              <span className="slider round" style={{
+                position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
+                backgroundColor: useCustomKey ? '#6366f1' : '#475569',
+                transition: '.4s', borderRadius: '34px',
+                boxShadow: useCustomKey ? '0 0 8px rgba(99, 102, 241, 0.5)' : 'none'
+              }}>
+                <span style={{
+                  position: 'absolute', content: '""', height: '16px', width: '16px', left: useCustomKey ? '21px' : '3px', bottom: '3px',
+                  backgroundColor: 'white', transition: '.4s', borderRadius: '50%'
+                }} />
+              </span>
+            </label>
+          </div>
+          
+          {useCustomKey && (
+            <div className="animate-fade-in" style={{ marginTop: '12px' }}>
+              <input
+                className="input"
+                type="password"
+                placeholder="Insira sua Gemini API Key (AI Studio)..."
+                value={geminiApiKey}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setGeminiApiKey(val);
+                  localStorage.setItem('gemini_api_key', val);
+                }}
+                onBlur={async () => {
+                  try {
+                    await saveGeminiConfig(geminiApiKey || null, useCustomKey);
+                  } catch (err) {
+                    console.error("Erro ao salvar API Key do Gemini no servidor:", err);
+                  }
+                }}
+                style={{ fontSize: '0.8rem', padding: '8px 12px', width: '100%', boxSizing: 'border-box' }}
+              />
+              <div style={{ marginTop: '8px', fontSize: '0.75rem', color: '#94a3b8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Modelo Fixo: <strong style={{ color: '#818cf8' }}>gemini-3.1-flash-lite</strong></span>
+                <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px' }}>Sincronizado na sua conta</span>
+              </div>
+            </div>
+          )}
         </div>
 
         <button
