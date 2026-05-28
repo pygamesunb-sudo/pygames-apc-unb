@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import { Code, Layers, AlignLeft } from 'lucide-react';
 
@@ -28,11 +28,25 @@ function BlocksAssembledMode({ blocks, onCodeChange }) {
     setDragging(null);
   };
 
+  const moveBlock = (index, direction) => {
+    if (direction === -1 && index === 0) return;
+    if (direction === 1 && index === orderedBlocks.length - 1) return;
+
+    setOrderedBlocks((prev) => {
+      const next = [...prev];
+      const temp = next[index];
+      next[index] = next[index + direction];
+      next[index + direction] = temp;
+      onCodeChange(next.map((b) => b.text).join('\n'));
+      return next;
+    });
+  };
+
   return (
     <div className="blocks-container">
-      <p className="blocks-hint">Arraste os blocos para montar a solucao na ordem correta.</p>
+      <p className="blocks-hint">Arraste os blocos ou use as setas para montar a solução na ordem correta.</p>
       <div className="blocks-list">
-        {orderedBlocks.map((block) => (
+        {orderedBlocks.map((block, idx) => (
           <div
             key={block.id}
             className={`code-block ${dragging === block.id ? 'code-block--dragging' : ''}`}
@@ -43,6 +57,26 @@ function BlocksAssembledMode({ blocks, onCodeChange }) {
           >
             <span className="code-block-handle">::</span>
             <code className="code-block-text">{block.text}</code>
+            <div className="block-order-buttons">
+              <button
+                type="button"
+                className="block-order-btn"
+                onClick={() => moveBlock(idx, -1)}
+                disabled={idx === 0}
+                title="Mover para cima"
+              >
+                ▲
+              </button>
+              <button
+                type="button"
+                className="block-order-btn"
+                onClick={() => moveBlock(idx, 1)}
+                disabled={idx === orderedBlocks.length - 1}
+                title="Mover para baixo"
+              >
+                ▼
+              </button>
+            </div>
           </div>
         ))}
       </div>
@@ -109,10 +143,20 @@ function BlocksFreeMode({ onCodeChange }) {
 
 /* ---------------------- Modo Digitacao Livre ---------------------- */
 function FreeTypingMode({ onCodeChange }) {
+  const [editorHeight, setEditorHeight] = useState(() => window.innerWidth < 640 ? '250px' : '380px');
+
+  useEffect(() => {
+    const handleResize = () => {
+      setEditorHeight(window.innerWidth < 640 ? '250px' : '380px');
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <div className="editor-container">
       <Editor
-        height="380px"
+        height={editorHeight}
         defaultLanguage="python"
         defaultValue="# Escreva sua solucao aqui\n"
         theme="vs-dark"

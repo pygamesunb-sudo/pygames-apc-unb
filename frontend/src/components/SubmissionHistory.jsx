@@ -80,68 +80,47 @@ export default function SubmissionHistory({ onBack }) {
               return (
                 <div 
                   key={sub.submission_id} 
-                  className="card flex items-center justify-between submission-timeline-card animate-fade-in"
-                  style={{ 
-                    padding: '20px', 
-                    borderLeft: `4px solid ${allPassed ? '#10b981' : '#ef4444'}`,
-                    background: 'rgba(30, 41, 59, 0.4)',
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '16px'
-                  }}
+                  className={`card submission-timeline-card animate-fade-in ${allPassed ? 'submission-card--passed' : 'submission-card--failed'}`}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 280 }}>
+                  <div className="submission-card-header">
                     <div 
+                      className="submission-user-avatar"
                       style={{ 
-                        width: 40, 
-                        height: 40, 
-                        borderRadius: '50%', 
-                        background: '#1e293b', 
-                        border: `1px solid ${allPassed ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
-                        overflow: 'hidden',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0
+                        border: `1px solid ${allPassed ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`
                       }}
                     >
                       {sub.photo_url || sub.email ? (
                         <img 
                           src={sub.photo_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${sub.uid}`} 
                           alt={sub.name}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          className="submission-user-img"
                         />
                       ) : (
                         <History size={16} style={{ color: '#64748b' }} />
                       )}
                     </div>
-                    <div>
-                      <div style={{ fontWeight: 600, color: '#f8fafc', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span>{sub.name || "Usuario Anonimo"}</span>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: '#64748b' }}>({sub.email})</span>
+                    <div className="submission-user-info">
+                      <div className="submission-user-name-row">
+                        <span className="submission-player-name">{sub.name || "Usuario Anonimo"}</span>
+                        <span className="submission-player-email">({sub.email})</span>
                       </div>
-                      <div style={{ fontSize: '0.85rem', color: '#cbd5e1', marginTop: 2 }}>
+                      <div className="submission-problem-title">
                         Submeteu solucao para: <strong style={{ color: '#a855f7' }}>{sub.problem_title || "Problema de IA"}</strong>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: '#64748b', marginTop: 6 }}>
+                      <div className="submission-time-row">
                         <Clock size={12} />
                         <span>{formatTime(sub.timestamp)}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexShrink: 0 }}>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: 2 }}>Pontuacao</div>
+                  <div className="submission-card-actions">
+                    <div className="submission-score-block">
+                      <div className="submission-score-label">Pontuacao</div>
                       <div 
+                        className="submission-score-value"
                         style={{ 
-                          fontSize: '1.2rem', 
-                          fontWeight: 'bold', 
-                          color: allPassed ? '#10b981' : '#f59e0b',
-                          fontFamily: 'monospace',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px'
+                          color: allPassed ? '#10b981' : '#f59e0b'
                         }}
                       >
                         {allPassed ? (
@@ -154,8 +133,7 @@ export default function SubmissionHistory({ onBack }) {
                     </div>
 
                     <button 
-                      className="btn-secondary flex items-center gap-2"
-                      style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                      className="btn-secondary flex items-center gap-2 submission-view-code-btn"
                       onClick={() => setSelectedSubmission(sub)}
                     >
                       <Code size={14} />
@@ -172,31 +150,13 @@ export default function SubmissionHistory({ onBack }) {
       {/* Modal de Código Monaco */}
       {selectedSubmission && (
         <div 
-          className="arcade-gameover-overlay animate-fade-in" 
-          style={{ zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+          className="arcade-gameover-overlay submission-modal-overlay animate-fade-in" 
         >
           <div 
-            className="card animate-fade-in" 
-            style={{ 
-              width: '100%', 
-              maxWidth: 700, 
-              background: '#090d16', 
-              border: '1px solid rgba(99, 102, 241, 0.3)', 
-              padding: 0, 
-              overflow: 'hidden' 
-            }}
+            className="card submission-code-modal animate-fade-in" 
           >
             <div 
-              style={{ 
-                padding: '16px 20px', 
-                background: '#0c111e', 
-                borderBottom: '1px solid rgba(255,255,255,0.05)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'between',
-                width: '100%',
-                boxSizing: 'border-box'
-              }}
+              className="submission-modal-header"
             >
               <div style={{ textAlign: 'left', flex: 1 }}>
                 <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.05rem', fontWeight: 600 }}>
@@ -214,7 +174,7 @@ export default function SubmissionHistory({ onBack }) {
                 Fechar
               </button>
             </div>
-            <div style={{ height: '350px', width: '100%' }}>
+            <div className="submission-modal-editor-container">
               <Editor
                 height="100%"
                 defaultLanguage="python"

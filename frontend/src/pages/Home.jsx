@@ -109,16 +109,9 @@ export default function Home({ onGenerate, onSelectProblem, isLoading }) {
         </div>
 
         {/* Painel da API Key do Gemini (Google AI Studio) */}
-        <div className="api-key-section" style={{
-          marginTop: '10px',
-          padding: '16px',
-          background: 'rgba(15, 23, 42, 0.4)',
-          borderRadius: '8px',
-          border: '1px solid rgba(99, 102, 241, 0.15)',
-          marginBottom: '20px'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '0.85rem', color: '#f8fafc', fontWeight: 600 }}>
+        <div className="api-key-section">
+          <div className="api-key-header">
+            <span className="api-key-title">
               Usar sua própria API Key do Gemini
             </span>
             <label className="switch" style={{ display: 'inline-block', position: 'relative', width: '40px', height: '22px' }}>
@@ -172,7 +165,7 @@ export default function Home({ onGenerate, onSelectProblem, isLoading }) {
                 }}
                 style={{ fontSize: '0.8rem', padding: '8px 12px', width: '100%', boxSizing: 'border-box' }}
               />
-              <div style={{ marginTop: '8px', fontSize: '0.75rem', color: '#94a3b8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="api-key-info-row">
                 <span>Modelo Fixo: <strong style={{ color: '#818cf8' }}>gemini-3.1-flash-lite</strong></span>
                 <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px' }}>Sincronizado na sua conta</span>
               </div>
@@ -213,7 +206,7 @@ export default function Home({ onGenerate, onSelectProblem, isLoading }) {
           <h2 className="hero-title" style={{ fontSize: '1.4rem', marginBottom: 24, textAlign: 'left', fontWeight: 600 }}>
             Galeria de Desafios Recentes
           </h2>
-          <div className="features-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
+          <div className="features-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))' }}>
             {previousProblems.map((prob) => {
               const diffInfo = DIFFICULTIES.find(d => d.id === prob.difficulty) || DIFFICULTIES[0];
               const Icon = diffInfo.icon;

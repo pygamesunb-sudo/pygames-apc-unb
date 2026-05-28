@@ -48,7 +48,8 @@ export default function Leaderboard({ onBack }) {
         </div>
       ) : (
         <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
-          <div className="table-wrapper" style={{ overflowX: 'auto' }}>
+          {/* Visualizacao Desktop (Tabela) */}
+          <div className="table-wrapper hide-on-mobile" style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: 600 }}>
               <thead>
                 <tr style={{ background: 'rgba(30, 41, 59, 0.5)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
@@ -165,6 +166,113 @@ export default function Leaderboard({ onBack }) {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Visualizacao Mobile (Cards de Lideres) */}
+          <div className="leaderboard-mobile-list show-on-mobile">
+            {leaderboard.length === 0 ? (
+              <div style={{ padding: '40px 20px', textAlign: 'center', color: '#cbd5e1' }}>
+                Nenhum jogador registrado ainda. Seja o primeiro a pontuar!
+              </div>
+            ) : (
+              leaderboard.map((player, idx) => {
+                const isTop1 = idx === 0;
+                const isTop2 = idx === 1;
+                const isTop3 = idx === 2;
+                
+                let posBg = 'transparent';
+                let posColor = '#94a3b8';
+                if (isTop1) { posBg = 'rgba(245, 158, 11, 0.15)'; posColor = '#f59e0b'; }
+                else if (isTop2) { posBg = 'rgba(148, 163, 184, 0.15)'; posColor = '#cbd5e1'; }
+                else if (isTop3) { posBg = 'rgba(180, 83, 9, 0.15)'; posColor = '#d97706'; }
+
+                return (
+                  <div 
+                    key={player.uid} 
+                    className="leaderboard-mobile-card"
+                    style={{
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                      padding: '16px',
+                      background: isTop1 ? 'rgba(99, 102, 241, 0.03)' : 'transparent',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span 
+                          style={{ 
+                            display: 'inline-flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            width: 26, 
+                            height: 26, 
+                            borderRadius: '50%', 
+                            background: posBg, 
+                            color: posColor,
+                            fontWeight: 'bold',
+                            fontSize: '0.8rem',
+                            border: isTop1 || isTop2 || isTop3 ? `1px solid ${posColor}` : 'none'
+                          }}
+                        >
+                          {idx + 1}
+                        </span>
+                        <div 
+                          style={{ 
+                            width: 32, 
+                            height: 32, 
+                            borderRadius: '50%', 
+                            background: '#1e293b', 
+                            border: '1px solid rgba(99, 102, 241, 0.3)',
+                            overflow: 'hidden',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          <img 
+                            src={player.photo_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${player.uid}`} 
+                            alt={player.name}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 600, color: '#f8fafc', fontSize: '0.88rem' }}>
+                            {player.name || "Usuario Anonimo"}
+                          </div>
+                          <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                            {player.email ? player.email.substring(0, 18) + '...' : ''}
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '0.65rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total</div>
+                        <div style={{ fontWeight: 'bold', color: '#a855f7', fontSize: '1.1rem' }}>
+                          {player.total_score || 0}
+                        </div>
+                      </div>
+                    </div>
+                    {/* Grid de Sub-pontuacoes */}
+                    <div className="leaderboard-mobile-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', padding: '8px 10px', background: 'rgba(15, 23, 42, 0.3)', borderRadius: '6px' }}>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '0.6rem', color: '#64748b' }}>Doodle</div>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#f8fafc' }}>{player.games?.doodle || 0}</div>
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '0.6rem', color: '#64748b' }}>Snake</div>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#f8fafc' }}>{player.games?.snake || 0}</div>
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '0.6rem', color: '#64748b' }}>Bug Inv.</div>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#f8fafc' }}>{player.games?.invaders || 0}</div>
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '0.6rem', color: '#64748b' }}>Prog (XP)</div>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#ec4899' }}>{player.coding_points || 0}</div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       )}

@@ -103,12 +103,12 @@ export default function MiniGame({ visible, isProblemReady, onGoToExercise, user
           
           {/* Banner de problema pronto no topo do Hub */}
           {isProblemReady && (
-            <div className="arcade-ready-banner animate-glow flex items-center justify-between w-full" style={{ padding: '12px 20px', background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: 'var(--radius-sm)', marginBottom: '24px' }}>
-              <div style={{ textAlign: 'left' }}>
+            <div className="arcade-ready-banner animate-glow">
+              <div className="ready-banner-text">
                 <span className="badge badge--facil" style={{ marginBottom: 4 }}>PRONTO</span>
                 <p style={{ margin: 0, fontSize: '0.85rem', color: '#f8fafc', fontWeight: 600 }}>Seu exercício foi compilado com sucesso!</p>
               </div>
-              <button className="btn-primary" onClick={onGoToExercise} style={{ padding: '8px 16px', fontSize: '0.8rem' }}>
+              <button className="btn-primary ready-banner-btn" onClick={onGoToExercise}>
                 Iniciar Desafio de Programação
               </button>
             </div>
@@ -195,20 +195,20 @@ export default function MiniGame({ visible, isProblemReady, onGoToExercise, user
         </div>
       ) : (
         <div className="active-game-viewport animate-fade-in" style={{ width: '100%' }}>
-          <div className="arcade-game-header flex items-center justify-between">
-            <button className="btn-secondary flex items-center gap-2" onClick={handleBackToHub}>
+          <div className="arcade-game-header">
+            <button className="btn-secondary flex items-center gap-2 arcade-header-back-btn" onClick={handleBackToHub}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
                 <line x1="19" y1="12" x2="5" y2="12"></line>
                 <polyline points="12 19 5 12 12 5"></polyline>
               </svg>
-              Fliperama
+              <span>Voltar</span>
             </button>
             <h3 className="arcade-current-game-title text-accent">
               {activeGame === GAME_VIEWS.DOODLE && 'Doodle Code-Ninja'}
               {activeGame === GAME_VIEWS.SNAKE && 'Snake.py'}
               {activeGame === GAME_VIEWS.INVADERS && 'Bug Invaders'}
             </h3>
-            <button className="btn-secondary" onClick={handleRestart}>
+            <button className="btn-secondary arcade-header-reset-btn" onClick={handleRestart}>
               Reiniciar
             </button>
           </div>

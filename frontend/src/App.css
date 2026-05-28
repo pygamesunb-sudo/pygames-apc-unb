@@ -860,7 +860,423 @@
 }
 
 /* ============================================================
-   RESPONSIVIDADE
+   BARRA DE NAVEGAÇÃO INFERIOR E ELEMENTOS MOBILE
+   ============================================================ */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: rgba(10, 14, 26, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border-subtle);
+  display: none; /* Ativado apenas em telas menores */
+  justify-content: space-around;
+  align-items: center;
+  z-index: 999;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+  padding: 0 10px;
+}
+
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.65rem;
+  font-weight: 500;
+  gap: 4px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  padding: 6px 12px;
+  flex: 1;
+}
+
+.bottom-nav-item svg {
+  transition: transform 0.2s ease;
+}
+
+.bottom-nav-item:active svg {
+  transform: scale(0.85);
+}
+
+.bottom-nav-item--active {
+  color: var(--accent-primary);
+  text-shadow: 0 0 10px var(--accent-primary-glow);
+}
+
+.bottom-nav-item--active svg {
+  filter: drop-shadow(0 0 5px var(--accent-primary));
+}
+
+.show-on-mobile-flex {
+  display: none;
+}
+
+.show-on-mobile {
+  display: none;
+}
+
+/* Botões de reordenação manual para Blocos Montados */
+.block-order-buttons {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.block-order-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.block-order-btn:hover:not(:disabled) {
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+  background: rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 8px var(--accent-primary-glow);
+}
+
+.block-order-btn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+/* Novo layout para o Leaderboard no Mobile */
+.leaderboard-mobile-list {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.leaderboard-mobile-card {
+  transition: background 0.2s ease;
+}
+
+.leaderboard-mobile-card:hover {
+  background: rgba(255, 255, 255, 0.02) !important;
+}
+
+/* Controles de Ação de Fliperama Mobile Premium */
+.mobile-controls-wrapper {
+  display: none; /* Ativado via media query */
+  justify-content: center;
+  gap: 32px;
+  width: 100%;
+  padding: 16px 20px;
+  background: rgba(10, 14, 26, 0.5);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  align-items: center;
+}
+
+.mobile-movement-buttons,
+.mobile-action-buttons {
+  display: flex;
+  gap: 14px;
+}
+
+.mobile-action-buttons {
+  border-left: 1.5px solid rgba(255, 255, 255, 0.08);
+  padding-left: 24px;
+}
+
+/* Classes do SubmissionHistory */
+.submission-timeline-card {
+  padding: 20px;
+  background: rgba(30, 41, 59, 0.4);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-left-width: 4px;
+  border-left-style: solid;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.submission-card--passed {
+  border-left-color: #10b981;
+}
+
+.submission-card--failed {
+  border-left-color: #ef4444;
+}
+
+.submission-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 280px;
+}
+
+.submission-user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #1e293b;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.submission-user-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.submission-user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.submission-user-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: #f8fafc;
+  font-size: 0.95rem;
+}
+
+.submission-player-name {
+  color: #f8fafc;
+}
+
+.submission-player-email {
+  font-size: 0.75rem;
+  font-weight: normal;
+  color: #64748b;
+}
+
+.submission-problem-title {
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  margin-top: 2px;
+}
+
+.submission-time-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 6px;
+}
+
+.submission-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-shrink: 0;
+}
+
+.submission-score-block {
+  text-align: right;
+}
+
+.submission-score-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-bottom: 2px;
+}
+
+.submission-score-value {
+  font-size: 1.2rem;
+  font-weight: bold;
+  font-family: monospace;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.submission-view-code-btn {
+  padding: 8px 16px;
+  font-size: 0.85rem;
+}
+
+/* Modal Submission */
+.submission-modal-overlay {
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.submission-code-modal {
+  width: 100%;
+  max-width: 700px;
+  background: #090d16;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  padding: 0 !important;
+  overflow: hidden;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.submission-modal-header {
+  padding: 16px 20px;
+  background: #0c111e;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.submission-modal-editor-container {
+  height: 350px;
+  width: 100%;
+  flex: 1;
+}
+
+/* ============================================================
+   APLICATIVO COMPACTO - DESKTOP E ESTRUTURA GERAL
+   ============================================================ */
+.api-key-section {
+  margin-top: 10px;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.4);
+  border-radius: 8px;
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  margin-bottom: 20px;
+}
+
+.api-key-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 12px;
+}
+
+.api-key-title {
+  font-size: 0.85rem;
+  color: #f8fafc;
+  font-weight: 600;
+}
+
+.api-key-info-row {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.arcade-ready-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 20px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  border-radius: var(--radius-sm);
+  margin-bottom: 24px;
+  gap: 16px;
+}
+
+.ready-banner-text {
+  text-align: left;
+}
+
+.ready-banner-btn {
+  padding: 8px 16px;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.arcade-game-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  max-width: 400px;
+  margin-bottom: 16px;
+}
+
+.arcade-header-back-btn,
+.arcade-header-reset-btn {
+  flex-shrink: 0;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+}
+
+.arcade-current-game-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+  text-align: center;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.loading-header-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  width: 100%;
+  gap: 12px;
+}
+
+.loading-phase-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.loading-phase-text {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.loading-eta-text {
+  font-size: 1rem;
+  color: #6366f1;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   RESPONSIVIDADE GLOBAL
    ============================================================ */
 @media (max-width: 640px) {
   .difficulty-grid { grid-template-columns: 1fr 1fr; }
@@ -868,9 +1284,148 @@
   .mode-tabs { flex-direction: column; }
   .exercise-header { flex-direction: column; align-items: flex-start; gap: 8px; }
   .result-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+  
   .hide-on-mobile { display: none !important; }
-  .mobile-dpad-container { display: flex !important; }
-  .doodle-mobile-controls { display: flex !important; }
+  .show-on-mobile-flex { display: flex !important; }
+  .show-on-mobile { display: block !important; }
+  
+  .bottom-nav { display: flex !important; }
+  .main-content { padding-bottom: 96px; } /* Evita que o rodape/botoes fiquem tapados pela bottom nav */
+  
+  /* Escalonamento automatico do Canvas de Minigame */
+  .arcade-screen-container {
+    width: 100% !important;
+    max-width: 400px !important;
+    height: auto !important;
+  }
+  
+  .canvas-wrapper {
+    width: 100% !important;
+    max-width: 400px !important;
+    height: auto !important;
+    aspect-ratio: 2/3 !important;
+  }
+  
+  .retro-canvas {
+    width: 100% !important;
+    height: 100% !important;
+    display: block !important;
+  }
+  
+  /* Controles virtuais mobile */
+  .mobile-controls-wrapper {
+    display: flex !important;
+  }
+  
+  .mobile-dpad-container {
+    display: flex !important;
+  }
+  
+  /* Timeline e Modal de submissoes responsivos */
+  .submission-timeline-card {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+  }
+  
+  .submission-card-header {
+    min-width: 0;
+  }
+  
+  .submission-card-actions {
+    justify-content: space-between;
+    margin-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 12px;
+  }
+  
+  .submission-code-modal {
+    max-height: 95vh;
+  }
+  
+  .submission-modal-editor-container {
+    height: 280px;
+  }
+
+  /* Ajustes extras de corte e otimização responsiva */
+  .api-key-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .api-key-info-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  
+  .arcade-ready-banner {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+    gap: 12px;
+    padding: 16px;
+  }
+  
+  .ready-banner-text {
+    text-align: center;
+  }
+  
+  .ready-banner-btn {
+    width: 100%;
+  }
+  
+  .arcade-game-header {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    max-width: 100%;
+    padding: 0 10px;
+  }
+  
+  .arcade-current-game-title {
+    width: 100%;
+    flex: none;
+    order: -1;
+    font-size: 1rem;
+    margin-bottom: 4px;
+  }
+  
+  .arcade-header-back-btn,
+  .arcade-header-reset-btn {
+    flex: 1;
+    justify-content: center;
+  }
+  
+  .loading-header-wrapper {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .loading-phase-text {
+    white-space: normal;
+  }
+  
+  .loading-eta-text {
+    align-self: flex-end;
+    font-size: 0.9rem;
+  }
+  
+  .test-case-body code {
+    white-space: pre-wrap !important;
+    word-break: break-all !important;
+  }
+  
+  .login-page {
+    padding: 16px 12px !important;
+    min-height: calc(100vh - 100px);
+  }
+  
+  .login-card {
+    padding: 24px 16px !important;
+  }
 }
 
 /* ============================================================

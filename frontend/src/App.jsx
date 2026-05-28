@@ -293,7 +293,7 @@ export default function App() {
             <span className="navbar-name">Pygame-APC</span>
           </button>
           
-          <nav className="navbar-links" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div className="navbar-right-side flex items-center gap-2">
             {/* Informações Rápidas do Usuário */}
             {userProfile && (
               <div 
@@ -306,7 +306,6 @@ export default function App() {
                   padding: '4px 12px 4px 6px', 
                   borderRadius: '999px',
                   border: '1px solid rgba(99, 102, 241, 0.2)',
-                  marginRight: '8px'
                 }}
               >
                 <div style={{ width: 24, height: 24, borderRadius: '50%', overflow: 'hidden', border: '1px solid #6366f1' }}>
@@ -322,60 +321,62 @@ export default function App() {
               </div>
             )}
 
-            <button
-              className={`btn-secondary ${view === VIEW.MINIGAME ? 'btn-active' : ''}`}
-              style={{ padding: '8px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-              onClick={() => {
-                setError(null);
-                setResult(null);
-                setView(VIEW.MINIGAME);
-              }}
-            >
-              <Sparkles size={14} style={{ color: '#10b981' }} />
-              Fliperama
-            </button>
+            <nav className="navbar-links hide-on-mobile" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <button
+                className={`btn-secondary ${view === VIEW.MINIGAME ? 'btn-active' : ''}`}
+                style={{ padding: '8px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                onClick={() => {
+                  setError(null);
+                  setResult(null);
+                  setView(VIEW.MINIGAME);
+                }}
+              >
+                <Sparkles size={14} style={{ color: '#10b981' }} />
+                Fliperama
+              </button>
 
-            <button
-              className={`btn-secondary ${view === VIEW.LEADERBOARD ? 'btn-active' : ''}`}
-              style={{ padding: '8px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-              onClick={() => {
-                setError(null);
-                setResult(null);
-                setView(VIEW.LEADERBOARD);
-              }}
-            >
-              <Trophy size={14} style={{ color: '#f59e0b' }} />
-              Ranking
-            </button>
+              <button
+                className={`btn-secondary ${view === VIEW.LEADERBOARD ? 'btn-active' : ''}`}
+                style={{ padding: '8px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                onClick={() => {
+                  setError(null);
+                  setResult(null);
+                  setView(VIEW.LEADERBOARD);
+                }}
+              >
+                <Trophy size={14} style={{ color: '#f59e0b' }} />
+                Ranking
+              </button>
 
-            <button
-              className={`btn-secondary ${view === VIEW.HISTORY ? 'btn-active' : ''}`}
-              style={{ padding: '8px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-              onClick={() => {
-                setError(null);
-                setResult(null);
-                setView(VIEW.HISTORY);
-              }}
-            >
-              <History size={14} style={{ color: '#ec4899' }} />
-              Historico
-            </button>
+              <button
+                className={`btn-secondary ${view === VIEW.HISTORY ? 'btn-active' : ''}`}
+                style={{ padding: '8px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                onClick={() => {
+                  setError(null);
+                  setResult(null);
+                  setView(VIEW.HISTORY);
+                }}
+              >
+                <History size={14} style={{ color: '#ec4899' }} />
+                Historico
+              </button>
 
-            <button
-              className="btn-secondary"
-              style={{ padding: '8px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px', borderColor: 'rgba(239, 68, 68, 0.4)' }}
-              onClick={async () => {
-                try {
-                  await logout();
-                } catch (e) {
-                  console.error(e);
-                }
-              }}
-            >
-              <LogOut size={14} style={{ color: '#ef4444' }} />
-              Sair
-            </button>
-          </nav>
+              <button
+                className="btn-secondary"
+                style={{ padding: '8px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px', borderColor: 'rgba(239, 68, 68, 0.4)' }}
+                onClick={async () => {
+                  try {
+                    await logout();
+                  } catch (e) {
+                    console.error(e);
+                  }
+                }}
+              >
+                <LogOut size={14} style={{ color: '#ef4444' }} />
+                Sair
+              </button>
+            </nav>
+          </div>
         </div>
       </header>
 
@@ -418,12 +419,12 @@ export default function App() {
                   </div>
                 ) : (
                   <>
-                    <div className="flex items-center justify-between" style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div className="flex items-center gap-2" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div className="spinner" style={{ width: 16, height: 16 }} />
-                        <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 500 }}>{phase}</span>
+                    <div className="loading-header-wrapper">
+                      <div className="loading-phase-container">
+                        <div className="spinner" style={{ width: 16, height: 16, flexShrink: 0 }} />
+                        <span className="loading-phase-text">{phase}</span>
                       </div>
-                      <span style={{ fontSize: '1rem', color: '#6366f1', fontWeight: 'bold' }}>
+                      <span className="loading-eta-text">
                         ETA: {eta}s
                       </span>
                     </div>
@@ -528,6 +529,70 @@ export default function App() {
             </>
           )}
         </button>
+      )}
+
+      {/* Barra de Navegação Inferior (Bottom Navigation Bar) - Visível apenas no Mobile */}
+      {currentUser && (
+        <nav className="bottom-nav show-on-mobile-flex">
+          <button 
+            className={`bottom-nav-item ${view === VIEW.HOME || view === VIEW.EXERCISE || view === VIEW.LOADING ? 'bottom-nav-item--active' : ''}`}
+            onClick={handleBack}
+          >
+            <Code size={20} />
+            <span>Inicio</span>
+          </button>
+          
+          <button 
+            className={`bottom-nav-item ${view === VIEW.MINIGAME ? 'bottom-nav-item--active' : ''}`}
+            onClick={() => {
+              setError(null);
+              setResult(null);
+              setView(VIEW.MINIGAME);
+            }}
+          >
+            <Sparkles size={20} style={{ color: '#10b981' }} />
+            <span>Fliperama</span>
+          </button>
+
+          <button 
+            className={`bottom-nav-item ${view === VIEW.LEADERBOARD ? 'bottom-nav-item--active' : ''}`}
+            onClick={() => {
+              setError(null);
+              setResult(null);
+              setView(VIEW.LEADERBOARD);
+            }}
+          >
+            <Trophy size={20} style={{ color: '#f59e0b' }} />
+            <span>Ranking</span>
+          </button>
+
+          <button 
+            className={`bottom-nav-item ${view === VIEW.HISTORY ? 'bottom-nav-item--active' : ''}`}
+            onClick={() => {
+              setError(null);
+              setResult(null);
+              setView(VIEW.HISTORY);
+            }}
+          >
+            <History size={20} style={{ color: '#ec4899' }} />
+            <span>Historico</span>
+          </button>
+
+          <button 
+            className="bottom-nav-item"
+            style={{ color: '#ef4444' }}
+            onClick={async () => {
+              try {
+                await logout();
+              } catch (e) {
+                console.error(e);
+              }
+            }}
+          >
+            <LogOut size={20} />
+            <span>Sair</span>
+          </button>
+        </nav>
       )}
     </div>
   );

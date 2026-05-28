@@ -308,12 +308,34 @@ export default function BugInvaders({ onGameOver, onBackToMenu, isProblemReady, 
       </div>
 
       {/* Controles de Ação para Mobile */}
-      <div className="mobile-dpad-container doodle-mobile-controls" style={{ display: 'flex', gap: '30px', justifyContent: 'center', width: '100%', padding: '10px 20px' }}>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button className="dpad-btn" onTouchStart={() => handleMoveLeft(true)} onTouchEnd={() => handleMoveLeft(false)} onMouseDown={() => handleMoveLeft(true)} onMouseUp={() => handleMoveLeft(false)}>◀</button>
-          <button className="dpad-btn" onTouchStart={() => handleMoveRight(true)} onTouchEnd={() => handleMoveRight(false)} onMouseDown={() => handleMoveRight(true)} onMouseUp={() => handleMoveRight(false)}>▶</button>
+      <div className="mobile-controls-wrapper">
+        <div className="mobile-movement-buttons">
+          <button 
+            className="dpad-btn" 
+            onTouchStart={(e) => { e.preventDefault(); handleMoveLeft(true); }} 
+            onTouchEnd={(e) => { e.preventDefault(); handleMoveLeft(false); }} 
+            onMouseDown={(e) => { e.preventDefault(); handleMoveLeft(true); }} 
+            onMouseUp={(e) => { e.preventDefault(); handleMoveLeft(false); }}
+          >
+            ◀
+          </button>
+          <button 
+            className="dpad-btn" 
+            onTouchStart={(e) => { e.preventDefault(); handleMoveRight(true); }} 
+            onTouchEnd={(e) => { e.preventDefault(); handleMoveRight(false); }} 
+            onMouseDown={(e) => { e.preventDefault(); handleMoveRight(true); }} 
+            onMouseUp={(e) => { e.preventDefault(); handleMoveRight(false); }}
+          >
+            ▶
+          </button>
         </div>
-        <button className="dpad-btn action-btn-shoot" onClick={handleShootVirtual} style={{ backgroundColor: 'rgba(16,185,129,0.2)', border: '2px solid #10b981' }}>⚡</button>
+        <button 
+          className="dpad-btn action-btn-shoot" 
+          onTouchStart={(e) => { e.preventDefault(); handleShootVirtual(); }}
+          onMouseDown={(e) => { e.preventDefault(); handleShootVirtual(); }}
+        >
+          ⚡
+        </button>
       </div>
 
       <div className="game-controls-legend hide-on-mobile">

@@ -436,14 +436,42 @@ export default function DoodleNinja({ onGameOver, onBackToMenu, isProblemReady, 
       </div>
 
       {/* Controles de Ação para Mobile */}
-      <div className="mobile-dpad-container doodle-mobile-controls" style={{ display: 'flex', gap: '30px', justifyContent: 'center', width: '100%', padding: '10px 20px' }}>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button className="dpad-btn" onTouchStart={() => handleMoveLeft(true)} onTouchEnd={() => handleMoveLeft(false)} onMouseDown={() => handleMoveLeft(true)} onMouseUp={() => handleMoveLeft(false)}>◀</button>
-          <button className="dpad-btn" onTouchStart={() => handleMoveRight(true)} onTouchEnd={() => handleMoveRight(false)} onMouseDown={() => handleMoveRight(true)} onMouseUp={() => handleMoveRight(false)}>▶</button>
+      <div className="mobile-controls-wrapper">
+        <div className="mobile-movement-buttons">
+          <button 
+            className="dpad-btn" 
+            onTouchStart={(e) => { e.preventDefault(); handleMoveLeft(true); }} 
+            onTouchEnd={(e) => { e.preventDefault(); handleMoveLeft(false); }} 
+            onMouseDown={(e) => { e.preventDefault(); handleMoveLeft(true); }} 
+            onMouseUp={(e) => { e.preventDefault(); handleMoveLeft(false); }}
+          >
+            ◀
+          </button>
+          <button 
+            className="dpad-btn" 
+            onTouchStart={(e) => { e.preventDefault(); handleMoveRight(true); }} 
+            onTouchEnd={(e) => { e.preventDefault(); handleMoveRight(false); }} 
+            onMouseDown={(e) => { e.preventDefault(); handleMoveRight(true); }} 
+            onMouseUp={(e) => { e.preventDefault(); handleMoveRight(false); }}
+          >
+            ▶
+          </button>
         </div>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button className="dpad-btn action-btn-jump" onClick={handleJump} style={{ backgroundColor: 'rgba(99,102,241,0.2)', border: '2px solid #6366f1' }}>▲</button>
-          <button className="dpad-btn action-btn-shoot" onClick={handleShootVirtual} style={{ backgroundColor: 'rgba(34,211,238,0.2)', border: '2px solid #22d3ee' }}>⚡</button>
+        <div className="mobile-action-buttons">
+          <button 
+            className="dpad-btn action-btn-jump" 
+            onTouchStart={(e) => { e.preventDefault(); handleJump(); }}
+            onMouseDown={(e) => { e.preventDefault(); handleJump(); }}
+          >
+            ▲
+          </button>
+          <button 
+            className="dpad-btn action-btn-shoot" 
+            onTouchStart={(e) => { e.preventDefault(); handleShootVirtual(); }}
+            onMouseDown={(e) => { e.preventDefault(); handleShootVirtual(); }}
+          >
+            ⚡
+          </button>
         </div>
       </div>
 
