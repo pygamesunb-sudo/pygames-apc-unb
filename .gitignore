@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+
+# Variaveis de Ambiente (NUNCA subir no repositorio)
+.env
+*.env
+
+# Node / React
+node_modules/
+dist/
+.DS_Store
+*.local
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log

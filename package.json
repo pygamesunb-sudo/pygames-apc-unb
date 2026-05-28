@@ -1,0 +1,14 @@
+{
+  "name": "pygame-apc-root",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Root workspace workspace for Pygame-APC",
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "backend": "python -m uvicorn app.main:app --reload --app-dir backend",
+    "build": "npm --prefix frontend run build",
+    "deploy": "firebase deploy --only hosting",
+    "check": "python check_setup.py",
+    "test:backend": "python -m pytest backend/tests/"
+  }
+}
