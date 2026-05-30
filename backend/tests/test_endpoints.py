@@ -15,7 +15,7 @@ def test_health_check():
     assert "version" in data
 
 
-@patch("app.routers.submissions.get_problem")
+@patch("app.routers.submissions.firebase_service.get_problem")
 def test_submit_code_success(mock_get_problem):
     """Testa submissao de codigo correta com mock de banco de dados."""
     # Configura o mock para retornar um problema valido com casos de teste
@@ -33,7 +33,8 @@ def test_submit_code_success(mock_get_problem):
 
     response = client.post(
         "/api/submissions/submit",
-        json={"problem_id": "test-problem-id", "code": user_code}
+        json={"problem_id": "test-problem-id", "code": user_code},
+        headers={"Authorization": "Bearer mock-testing-token-apc"}
     )
 
     assert response.status_code == 200
@@ -45,7 +46,7 @@ def test_submit_code_success(mock_get_problem):
     assert data["results"][0]["passed"] is True
 
 
-@patch("app.routers.submissions.get_problem")
+@patch("app.routers.submissions.firebase_service.get_problem")
 def test_submit_code_failure(mock_get_problem):
     """Testa submissao de codigo incorreta que falha nos casos de teste."""
     mock_get_problem.return_value = {
@@ -60,7 +61,8 @@ def test_submit_code_failure(mock_get_problem):
 
     response = client.post(
         "/api/submissions/submit",
-        json={"problem_id": "test-problem-id", "code": user_code}
+        json={"problem_id": "test-problem-id", "code": user_code},
+        headers={"Authorization": "Bearer mock-testing-token-apc"}
     )
 
     assert response.status_code == 200
@@ -72,14 +74,15 @@ def test_submit_code_failure(mock_get_problem):
     assert data["results"][0]["actual_output"] == "15"
 
 
-@patch("app.routers.submissions.get_problem")
+@patch("app.routers.submissions.firebase_service.get_problem")
 def test_submit_code_not_found(mock_get_problem):
     """Testa erro 404 ao submeter para ID de problema inexistente."""
     mock_get_problem.return_value = None
 
     response = client.post(
         "/api/submissions/submit",
-        json={"problem_id": "non-existent-id", "code": "print(1)"}
+        json={"problem_id": "non-existent-id", "code": "print(1)"},
+        headers={"Authorization": "Bearer mock-testing-token-apc"}
     )
 
     assert response.status_code == 404
@@ -91,7 +94,8 @@ def test_submit_code_too_long():
     huge_code = "print(1)\n" * 2000  # Excede limite MAX_CODE_LENGTH
     response = client.post(
         "/api/submissions/submit",
-        json={"problem_id": "test-id", "code": huge_code}
+        json={"problem_id": "test-id", "code": huge_code},
+        headers={"Authorization": "Bearer mock-testing-token-apc"}
     )
     assert response.status_code == 400
     assert "excede o limite" in response.json()["detail"].lower()

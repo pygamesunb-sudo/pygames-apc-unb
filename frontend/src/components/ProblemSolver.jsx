@@ -10,7 +10,8 @@ const MODES = [
 
 /* ---------------------- Modo Blocos Montados ---------------------- */
 function BlocksAssembledMode({ blocks, onCodeChange }) {
-  const [orderedBlocks, setOrderedBlocks] = useState(() => blocks.map((b, i) => ({ id: i, text: b })));
+  const cleanBlocks = blocks.filter(b => b && b.trim() !== "");
+  const [orderedBlocks, setOrderedBlocks] = useState(() => cleanBlocks.map((b, i) => ({ id: i, text: b })));
   const [dragging, setDragging] = useState(null);
 
   const handleDragStart = (id) => setDragging(id);
@@ -56,7 +57,7 @@ function BlocksAssembledMode({ blocks, onCodeChange }) {
             onDrop={() => handleDrop(block.id)}
           >
             <span className="code-block-handle">::</span>
-            <code className="code-block-text">{block.text}</code>
+            <code className="code-block-text" style={{ whiteSpace: 'pre-wrap', display: 'block', textAlign: 'left' }}>{block.text}</code>
             <div className="block-order-buttons">
               <button
                 type="button"
@@ -174,6 +175,47 @@ function FreeTypingMode({ onCodeChange }) {
   );
 }
 
+/* Helper para formatar Markdown leve (negritos e blocos de codigo) no enunciado */
+const formatDescription = (text) => {
+  if (!text) return null;
+  
+  // Divide o texto com base em blocos de codigo (```)
+  const parts = text.split(/(```[\s\S]*?```)/g);
+  
+  return parts.map((part, idx) => {
+    if (part.startsWith('```')) {
+      const codeLines = part.slice(3, -3).trim().split('\n');
+      if (codeLines[0] === 'python' || codeLines[0] === 'py' || codeLines[0] === 'text') {
+        codeLines.shift();
+      }
+      const cleanCode = codeLines.join('\n');
+      return (
+        <pre key={idx} className="example-pre">
+          <code>{cleanCode}</code>
+        </pre>
+      );
+    }
+    
+    // Processa negritos e linhas de paragrafo normais
+    const lines = part.split('\n');
+    return lines.map((line, lIdx) => {
+      const lineParts = line.split(/(\*\*.*?\*\*)/g);
+      const formattedLine = lineParts.map((lPart, pIdx) => {
+        if (lPart.startsWith('**') && lPart.endsWith('**')) {
+          return <strong key={pIdx}>{lPart.slice(2, -2)}</strong>;
+        }
+        return lPart;
+      });
+      
+      return (
+        <span key={`${lIdx}-${idx}`} style={{ display: 'block', minHeight: line.trim() === '' ? '0.8em' : 'auto', margin: '4px 0' }}>
+          {formattedLine}
+        </span>
+      );
+    });
+  });
+};
+
 /* ---------------------- Componente Principal --------------------- */
 export default function ProblemSolver({ problem, onSubmit, isSubmitting, result }) {
   const [activeMode, setActiveMode] = useState('free-typing');
@@ -196,7 +238,36 @@ export default function ProblemSolver({ problem, onSubmit, isSubmitting, result 
         </div>
         <h2>{problem.title}</h2>
         <div className="divider" />
-        <p className="problem-description">{problem.description}</p>
+        <div className="problem-description">{formatDescription(problem.description)}</div>
+        
+        {/* Renderiza tabela de exemplos dinamica apenas se o enunciado NAO tiver exemplos textuais */}
+        {!/exemplo|entrada|saída/i.test(problem.description) && problem.test_cases?.length > 0 && (
+          <div className="examples-section">
+            <h4 className="examples-title">
+              Exemplos de Entrada e Saída
+            </h4>
+            <table className="examples-table">
+              <thead>
+                <tr>
+                  <th>Entrada (stdin)</th>
+                  <th>Saída Esperada (stdout)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {problem.test_cases.slice(0, 2).map((tc, idx) => (
+                  <tr key={idx}>
+                    <td>
+                      <pre className="example-pre">{tc.input || '(sem entrada)'}</pre>
+                    </td>
+                    <td>
+                      <pre className="example-pre">{tc.expected_output}</pre>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
         {problem.hints?.length > 0 && (
           <details className="hints-details">
             <summary>Ver dicas</summary>
@@ -225,6 +296,7 @@ export default function ProblemSolver({ problem, onSubmit, isSubmitting, result 
       <div className="card">
         {activeMode === 'blocks-assembled' && (
           <BlocksAssembledMode
+            key={problem.problem_id}
             blocks={problem.solution_blocks || []}
             onCodeChange={setCode}
           />

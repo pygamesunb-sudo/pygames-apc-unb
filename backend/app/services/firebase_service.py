@@ -429,3 +429,68 @@ async def get_all_submissions_history() -> list[dict]:
         logger.warning("Falha ao obter submissoes do Firestore: %s. Ativando fallback local.", e)
         _use_local_fallback = True
         return sorted(_in_memory_submissions, key=lambda x: x.get("timestamp", ""), reverse=True)[:50]
+
+
+async def register_solved_exercise_points(uid: str, email: str, name: str, exercise_id: str) -> dict:
+    """
+    Registra um exercicio interativo resolvido do Docs, concedendo 50 pontos se resolvido pela primeira vez.
+    Retorna o perfil atualizado do usuario.
+    """
+    global _use_local_fallback
+    db = get_db()
+    if db is None:
+        profile = await get_user_profile_data(uid)
+        profile["email"] = email
+        profile["name"] = name
+        solved_list = profile.setdefault("solved_problems", [])
+        if exercise_id not in solved_list:
+            solved_list.append(exercise_id)
+            profile["coding_points"] = profile.get("coding_points", 0) + 50
+            profile["total_score"] = profile.get("coding_points", 0) + sum(profile.setdefault("games", {"doodle": 0, "snake": 0, "invaders": 0}).values())
+            _in_memory_users[uid] = profile
+        return profile
+
+    try:
+        user_ref = db.collection("users").document(uid)
+        doc = user_ref.get(timeout=5.0)
+        profile = doc.to_dict() if doc.exists else {
+            "uid": uid,
+            "email": email,
+            "name": name,
+            "coding_points": 0,
+            "total_score": 0,
+            "games": {
+                "doodle": 0,
+                "snake": 0,
+                "invaders": 0
+            },
+            "solved_problems": []
+        }
+
+        profile["email"] = email
+        profile["name"] = name
+        solved_list = profile.get("solved_problems", [])
+        
+        if exercise_id not in solved_list:
+            solved_list.append(exercise_id)
+            profile["solved_problems"] = solved_list
+            profile["coding_points"] = profile.get("coding_points", 0) + 50
+            games_dict = profile.get("games", {"doodle": 0, "snake": 0, "invaders": 0})
+            profile["total_score"] = profile.get("coding_points", 0) + sum(games_dict.values())
+            user_ref.set(profile, timeout=5.0)
+            logger.info("Exercicio %s registrado para %s. Novos pontos: %d", exercise_id, name, profile["coding_points"])
+        return profile
+    except Exception as e:
+        logger.exception("Erro ao salvar exercicio no Firestore: %s", e)
+        _use_local_fallback = True
+        profile = await get_user_profile_data(uid)
+        profile["email"] = email
+        profile["name"] = name
+        solved_list = profile.setdefault("solved_problems", [])
+        if exercise_id not in solved_list:
+            solved_list.append(exercise_id)
+            profile["coding_points"] = profile.get("coding_points", 0) + 50
+            profile["total_score"] = profile.get("coding_points", 0) + sum(profile.setdefault("games", {"doodle": 0, "snake": 0, "invaders": 0}).values())
+            _in_memory_users[uid] = profile
+        return profile
+

@@ -29,13 +29,13 @@ Sempre responda em formato JSON válido com a seguinte estrutura exata:
   "suggested_improvements": ["melhoria 1"],
   "corrected_problem": {
     "title": "Título (corrigido se necessário, ou mantido)",
-    "description": "Enunciado (corrigido se necessário, ou mantido)",
+    "description": "Enunciado (corrigido se necessário, ou mantido sem tabelas complexas de markdown)",
     "test_cases": [
       {"input": "entrada", "expected_output": "saída"}
     ],
-    "solution": "código Python que resolve o problema (corrigido e testado)",
+    "solution": "código Python completo que resolve o problema rodando em standalone com I/O padrão (Lendo de stdin via sys.stdin.read() e printando no stdout; inclua obrigatoriamente bloco if __name__ == '__main__': no final se for baseado em funções)",
     "hints": ["dicas"],
-    "solution_blocks": ["linhas individuais da solução"]
+    "solution_blocks": ["blocos da solução com identação preservada (agrupados logicamente em multilinha para ter entre 6 e 12 elementos no total; sem blocos vazios ou duplicados)"]
   }
 }
 

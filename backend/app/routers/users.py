@@ -90,3 +90,33 @@ async def update_gemini_config(body: GeminiConfigRequest, user: dict = Depends(g
         firebase_service._in_memory_users[uid] = profile
         
     return {"status": "success", "profile": profile}
+
+
+class ExerciseSolvedRequest(BaseModel):
+    exercise_id: str = Field(..., description="ID do exercicio interativo resolvido.")
+
+
+@router.post("/exercise")
+async def register_solved_exercise(body: ExerciseSolvedRequest, user: dict = Depends(get_current_user)):
+    """
+    Registra um exercicio interativo resolvido da aba de documentacao.
+    Soma 50 pontos ao coding_points do usuario se resolvido pela primeira vez.
+    """
+    uid = user.get("uid")
+    email = user.get("email", "")
+    name = user.get("name", "Usuario Anonimo")
+    
+    updated_profile = await firebase_service.register_solved_exercise_points(
+        uid=uid,
+        email=email,
+        name=name,
+        exercise_id=body.exercise_id
+    )
+    
+    return {
+        "status": "success",
+        "coding_points": updated_profile.get("coding_points", 0),
+        "total_score": updated_profile.get("total_score", 0),
+        "profile": updated_profile
+    }
+

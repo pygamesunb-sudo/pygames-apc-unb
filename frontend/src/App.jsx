@@ -9,13 +9,19 @@ import {
   ArrowRight, 
   Sparkles, 
   Code,
-  User
+  User,
+  BookOpen
 } from 'lucide-react';
 import Home from './pages/Home';
 import Exercise from './pages/Exercise';
 import MiniGame from './components/MiniGame';
 import Leaderboard from './components/Leaderboard';
 import SubmissionHistory from './components/SubmissionHistory';
+import ApiDocs from './pages/ApiDocs';
+import LoginCard from './components/LoginCard';
+import Navbar from './components/Navbar';
+import BottomNav from './components/BottomNav';
+
 import { generateProblem, submitCode, getUserProfile } from './services/api';
 import { auth, loginWithGoogle, logout } from './services/firebase';
 import './App.css';
@@ -26,11 +32,21 @@ const VIEW = {
   EXERCISE: 'exercise', 
   MINIGAME: 'minigame',
   LEADERBOARD: 'leaderboard',
-  HISTORY: 'history'
+  HISTORY: 'history',
+  DOCS: 'docs'
 };
 
 export default function App() {
-  const [view, setView] = useState(VIEW.HOME);
+  const [view, setView] = useState(() => {
+    const hash = window.location.hash.replace('#', '');
+    if (Object.values(VIEW).includes(hash)) {
+      if (hash === VIEW.EXERCISE || hash === VIEW.LOADING) {
+        return VIEW.HOME;
+      }
+      return hash;
+    }
+    return VIEW.HOME;
+  });
   const [problem, setProblem] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState(null);
@@ -39,6 +55,31 @@ export default function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [phase, setPhase] = useState('');
 
+  // Sincroniza o estado de visualização do React com a URL Hash (histórico de navegação)
+  useEffect(() => {
+    if (window.location.hash !== `#${view}`) {
+      window.location.hash = view;
+    }
+  }, [view]);
+
+  // Escuta o evento hashchange do navegador para suportar botões de Voltar / Avançar
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (Object.values(VIEW).includes(hash)) {
+        if ((hash === VIEW.EXERCISE || hash === VIEW.LOADING) && !problem) {
+          setView(VIEW.HOME);
+          window.location.hash = VIEW.HOME;
+        } else {
+          setView(hash);
+        }
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [problem]);
+
   // Estados de Autenticacao
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
@@ -46,6 +87,7 @@ export default function App() {
 
   // ETA dinamico e preciso
   const [eta, setEta] = useState(180);
+
   // Auto-redireciona para o exercicio ao terminar se o usuario nao estiver jogando
   useEffect(() => {
     if (isProblemReady && view !== VIEW.EXERCISE && view !== VIEW.MINIGAME) {
@@ -202,185 +244,43 @@ export default function App() {
   // Render da Tela de Login Obrigatório
   if (!currentUser) {
     return (
-      <div className="login-page">
-        <div className="login-card card">
-          <div className="arcade-hub-neon-title" style={{ marginBottom: 12 }}>
-            <span className="retro-neon-purple">PYTHON</span>
-            <span className="retro-neon-cyan">ARCADE</span>
-          </div>
-          <p className="login-subtitle text-secondary">
-            Aprenda Python jogando em um fliperama retro gamificado alimentado por IA!
-          </p>
-          
-          <div className="login-features">
-            <div className="feature-item">
-              <span className="feature-icon" style={{ background: 'rgba(99,102,241,0.1)', color: '#6366f1' }}>
-                <Terminal size={18} />
-              </span>
-              <div>
-                <strong>Desafios Gerados por IA</strong>
-                <p>Estude tópicos customizados com códigos revisados e validados por agentes inteligentes.</p>
-              </div>
-            </div>
-            <div className="feature-item">
-              <span className="feature-icon" style={{ background: 'rgba(236,72,153,0.1)', color: '#ec4899' }}>
-                <Play size={18} />
-              </span>
-              <div>
-                <strong>Retro Mini-games</strong>
-                <p>Jogue Doodle Ninja, Snake.py ou Bug Invaders enquanto a IA constrói seu compilador.</p>
-              </div>
-            </div>
-            <div className="feature-item">
-              <span className="feature-icon" style={{ background: 'rgba(245,158,11,0.1)', color: '#f59e0b' }}>
-                <Trophy size={18} />
-              </span>
-              <div>
-                <strong>Scoreboard & Placar Geral</strong>
-                <p>Acumule pontos resolvendo códigos ou quebrando recordes e alcance o topo do ranking.</p>
-              </div>
-            </div>
-          </div>
-
-          {error && (
-            <div className="error-banner animate-fade-in" style={{ margin: '16px 0 0' }}>
-              <span>{error}</span>
-              <button onClick={() => setError(null)} className="error-close">x</button>
-            </div>
-          )}
-
-          <button 
-            className="btn-primary w-full justify-center" 
-            style={{ 
-              marginTop: 24, 
-              padding: '12px', 
-              fontSize: '1rem', 
-              gap: '12px',
-              background: 'linear-gradient(90deg, #6366f1 0%, #a855f7 100%)',
-              border: 'none',
-              boxShadow: '0 0 15px rgba(99, 102, 241, 0.4)'
-            }}
-            onClick={async () => {
-              setError(null);
-              try {
-                await loginWithGoogle();
-              } catch (e) {
-                setError(e.message || "Falha ao autenticar com o Google.");
-              }
-            }}
-          >
-            <svg viewBox="0 0 24 24" width="20" height="20" style={{ fill: '#ffffff' }}>
-              <path d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-6.887 4.114-4.664 0-8.443-3.778-8.443-8.443s3.778-8.443 8.443-8.443c2.25 0 4.18.81 5.67 2.22l3.17-3.17C18.91 1.91 15.9 1 12.24 1 6.033 1 1 6.033 1 12.24s5.033 11.24 11.24 11.24c6.478 0 10.793-4.537 10.793-10.978 0-.74-.067-1.422-.19-2.22H12.24z"/>
-            </svg>
-            Entrar com o Google
-          </button>
-
-          <p style={{ fontSize: '0.7rem', color: '#475569', textAlign: 'center', marginTop: 20 }}>
-            Autenticação segura provida pelo Google Firebase.
-          </p>
-        </div>
-      </div>
+      <LoginCard 
+        error={error}
+        setError={setError}
+        onLogin={async () => {
+          setError(null);
+          try {
+            await loginWithGoogle();
+          } catch (e) {
+            setError(e.message || "Falha ao autenticar com o Google.");
+          }
+        }}
+      />
     );
   }
 
   return (
     <div className="app-layout">
-      {/* Navbar */}
-      <header className="navbar">
-        <div className="container flex items-center justify-between">
-          <button className="navbar-brand" onClick={handleBack}>
-            <span className="navbar-logo">APC</span>
-            <span className="navbar-name">Pygame-APC</span>
-          </button>
-          
-          <div className="navbar-right-side flex items-center gap-2">
-            {/* Informações Rápidas do Usuário */}
-            {userProfile && (
-              <div 
-                className="user-badge" 
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '8px', 
-                  background: 'rgba(30, 41, 59, 0.6)', 
-                  padding: '4px 12px 4px 6px', 
-                  borderRadius: '999px',
-                  border: '1px solid rgba(99, 102, 241, 0.2)',
-                }}
-              >
-                <div style={{ width: 24, height: 24, borderRadius: '50%', overflow: 'hidden', border: '1px solid #6366f1' }}>
-                  <img 
-                    src={currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}`} 
-                    alt={currentUser.displayName}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                </div>
-                <span style={{ fontSize: '0.8rem', color: '#f8fafc', fontWeight: 500 }}>
-                  {userProfile.total_score || 0} pts
-                </span>
-              </div>
-            )}
+      {/* Navbar com links de menu e API Docs */}
+      <Navbar 
+        view={view}
+        setView={setView}
+        VIEW={VIEW}
+        currentUser={currentUser}
+        userProfile={userProfile}
+        onLogout={async () => {
+          try {
+            await logout();
+          } catch (e) {
+            console.error(e);
+          }
+        }}
+        onBack={handleBack}
+        setError={setError}
+        setResult={setResult}
+      />
 
-            <nav className="navbar-links hide-on-mobile" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <button
-                className={`btn-secondary ${view === VIEW.MINIGAME ? 'btn-active' : ''}`}
-                style={{ padding: '8px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-                onClick={() => {
-                  setError(null);
-                  setResult(null);
-                  setView(VIEW.MINIGAME);
-                }}
-              >
-                <Sparkles size={14} style={{ color: '#10b981' }} />
-                Fliperama
-              </button>
-
-              <button
-                className={`btn-secondary ${view === VIEW.LEADERBOARD ? 'btn-active' : ''}`}
-                style={{ padding: '8px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-                onClick={() => {
-                  setError(null);
-                  setResult(null);
-                  setView(VIEW.LEADERBOARD);
-                }}
-              >
-                <Trophy size={14} style={{ color: '#f59e0b' }} />
-                Ranking
-              </button>
-
-              <button
-                className={`btn-secondary ${view === VIEW.HISTORY ? 'btn-active' : ''}`}
-                style={{ padding: '8px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-                onClick={() => {
-                  setError(null);
-                  setResult(null);
-                  setView(VIEW.HISTORY);
-                }}
-              >
-                <History size={14} style={{ color: '#ec4899' }} />
-                Historico
-              </button>
-
-              <button
-                className="btn-secondary"
-                style={{ padding: '8px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px', borderColor: 'rgba(239, 68, 68, 0.4)' }}
-                onClick={async () => {
-                  try {
-                    await logout();
-                  } catch (e) {
-                    console.error(e);
-                  }
-                }}
-              >
-                <LogOut size={14} style={{ color: '#ef4444' }} />
-                Sair
-              </button>
-            </nav>
-          </div>
-        </div>
-      </header>
-
-      {/* Conteudo */}
+      {/* Conteudo Principal */}
       <main className="main-content">
         <div className="container">
           {/* Banner de erro global */}
@@ -481,6 +381,7 @@ export default function App() {
                 userProfile={userProfile}
                 onGoToExercise={() => {
                   setView(VIEW.EXERCISE);
+                  setView(VIEW.EXERCISE);
                   setIsProblemReady(false);
                 }}
               />
@@ -493,6 +394,15 @@ export default function App() {
 
           {view === VIEW.HISTORY && (
             <SubmissionHistory onBack={handleBack} />
+          )}
+
+          {/* Rota para Documentação da API */}
+          {view === VIEW.DOCS && (
+            <ApiDocs 
+              currentUser={currentUser}
+              userProfile={userProfile}
+              setUserProfile={setUserProfile}
+            />
           )}
         </div>
       </main>
@@ -532,68 +442,21 @@ export default function App() {
       )}
 
       {/* Barra de Navegação Inferior (Bottom Navigation Bar) - Visível apenas no Mobile */}
-      {currentUser && (
-        <nav className="bottom-nav show-on-mobile-flex">
-          <button 
-            className={`bottom-nav-item ${view === VIEW.HOME || view === VIEW.EXERCISE || view === VIEW.LOADING ? 'bottom-nav-item--active' : ''}`}
-            onClick={handleBack}
-          >
-            <Code size={20} />
-            <span>Inicio</span>
-          </button>
-          
-          <button 
-            className={`bottom-nav-item ${view === VIEW.MINIGAME ? 'bottom-nav-item--active' : ''}`}
-            onClick={() => {
-              setError(null);
-              setResult(null);
-              setView(VIEW.MINIGAME);
-            }}
-          >
-            <Sparkles size={20} style={{ color: '#10b981' }} />
-            <span>Fliperama</span>
-          </button>
-
-          <button 
-            className={`bottom-nav-item ${view === VIEW.LEADERBOARD ? 'bottom-nav-item--active' : ''}`}
-            onClick={() => {
-              setError(null);
-              setResult(null);
-              setView(VIEW.LEADERBOARD);
-            }}
-          >
-            <Trophy size={20} style={{ color: '#f59e0b' }} />
-            <span>Ranking</span>
-          </button>
-
-          <button 
-            className={`bottom-nav-item ${view === VIEW.HISTORY ? 'bottom-nav-item--active' : ''}`}
-            onClick={() => {
-              setError(null);
-              setResult(null);
-              setView(VIEW.HISTORY);
-            }}
-          >
-            <History size={20} style={{ color: '#ec4899' }} />
-            <span>Historico</span>
-          </button>
-
-          <button 
-            className="bottom-nav-item"
-            style={{ color: '#ef4444' }}
-            onClick={async () => {
-              try {
-                await logout();
-              } catch (e) {
-                console.error(e);
-              }
-            }}
-          >
-            <LogOut size={20} />
-            <span>Sair</span>
-          </button>
-        </nav>
-      )}
+      <BottomNav 
+        view={view}
+        setView={setView}
+        VIEW={VIEW}
+        onLogout={async () => {
+          try {
+            await logout();
+          } catch (e) {
+            console.error(e);
+          }
+        }}
+        onBack={handleBack}
+        setError={setError}
+        setResult={setResult}
+      />
     </div>
   );
 }

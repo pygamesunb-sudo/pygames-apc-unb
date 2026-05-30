@@ -700,6 +700,87 @@
   font-size: 0.88rem;
   color: var(--accent-secondary);
   flex: 1;
+  white-space: pre-wrap !important;
+  display: block;
+}
+
+/* Estilos para renderizacao de exemplos e Markdown no ProblemSolver */
+.problem-description strong {
+  color: var(--accent-secondary);
+  font-weight: 700;
+}
+
+.problem-description pre {
+  background: rgba(10, 15, 30, 0.85) !important;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: #a7f3d0 !important; /* Cor verde neon suave premium */
+  margin: 12px 0;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+.problem-description code {
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--accent-secondary);
+}
+
+.examples-section {
+  background: rgba(10, 14, 26, 0.3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  margin-top: 20px;
+}
+
+.examples-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.examples-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.examples-table th {
+  text-align: left;
+  padding: 8px 12px;
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--text-primary);
+  font-weight: 600;
+  border-bottom: 2px solid var(--border-accent);
+}
+
+.examples-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: top;
+}
+
+.example-pre {
+  margin: 0;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  color: var(--accent-secondary);
+  white-space: pre-wrap;
 }
 
 .code-block--free {
@@ -916,11 +997,39 @@
 }
 
 .show-on-mobile-flex {
-  display: none;
+  display: none !important;
 }
 
 .show-on-mobile {
-  display: none;
+  display: none !important;
+}
+
+/* ============================================================
+   RESPONSIVE SYSTEM (MEDIA QUERIES)
+   ============================================================ */
+@media (max-width: 768px) {
+  .hide-on-mobile {
+    display: none !important;
+  }
+  .show-on-mobile {
+    display: block !important;
+  }
+  .show-on-mobile-flex {
+    display: flex !important;
+  }
+  .bottom-nav {
+    display: flex !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .show-on-mobile,
+  .show-on-mobile-flex {
+    display: none !important;
+  }
+  .bottom-nav {
+    display: none !important;
+  }
 }
 
 /* Botões de reordenação manual para Blocos Montados */
