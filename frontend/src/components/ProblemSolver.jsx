@@ -217,7 +217,7 @@ const formatDescription = (text) => {
 };
 
 /* ---------------------- Componente Principal --------------------- */
-export default function ProblemSolver({ problem, onSubmit, isSubmitting, result }) {
+export default function ProblemSolver({ problem, onSubmit, isSubmitting, result, validationStatus, isGenerating }) {
   const [activeMode, setActiveMode] = useState('free-typing');
   const [code, setCode] = useState('');
 
@@ -231,10 +231,16 @@ export default function ProblemSolver({ problem, onSubmit, isSubmitting, result 
       {/* Cabecalho do problema */}
       <div className="problem-header card">
         <div className="flex items-center justify-between mb-4">
-          <span className={`badge badge--${problem.difficulty}`}>{problem.difficulty}</span>
-          <span className="badge" style={{ background: 'rgba(34,211,238,0.1)', color: 'var(--accent-secondary)', border: '1px solid rgba(34,211,238,0.3)' }}>
-            {problem.topic}
-          </span>
+          <span className={`badge badge--${problem.difficulty || 'facil'}`}>{problem.difficulty || '...'}</span>
+          <div className="flex gap-2">
+            <span className="badge" style={{ background: 'rgba(34,211,238,0.1)', color: 'var(--accent-secondary)', border: '1px solid rgba(34,211,238,0.3)' }}>
+              {problem.topic || '...'}
+            </span>
+            {isGenerating && <span className="badge animate-pulse" style={{ background: 'rgba(234,179,8,0.1)', color: '#eab308', border: '1px solid #eab308' }}>Gerando Texto...</span>}
+            {validationStatus === 'validating' && <span className="badge animate-pulse" style={{ background: 'rgba(99,102,241,0.1)', color: '#6366f1', border: '1px solid #6366f1' }}>Validando Testes...</span>}
+            {validationStatus === 'reviewing' && <span className="badge animate-pulse" style={{ background: 'rgba(249,115,22,0.1)', color: '#f97316', border: '1px solid #f97316' }}>Corrigindo Erros...</span>}
+            {validationStatus === 'validated' && <span className="badge badge--facil">Problema Validado</span>}
+          </div>
         </div>
         <h2>{problem.title}</h2>
         <div className="divider" />
@@ -313,7 +319,7 @@ export default function ProblemSolver({ problem, onSubmit, isSubmitting, result 
       <button
         className="btn-primary w-full mt-4"
         onClick={handleSubmit}
-        disabled={isSubmitting || !code.trim()}
+        disabled={isSubmitting || !code.trim() || isGenerating || validationStatus === 'validating' || validationStatus === 'reviewing'}
       >
         {isSubmitting ? <><span className="spinner" /> Avaliando...</> : 'Submeter Solucao'}
       </button>

@@ -22,7 +22,8 @@ import LoginCard from './components/LoginCard';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 
-import { generateProblem, submitCode, getUserProfile } from './services/api';
+import { generateProblemStream, validateProblem, reviewProblem, submitCode, getUserProfile } from './services/api';
+import { parsePartialJson } from './utils/partialJsonParser';
 import { auth, loginWithGoogle, logout } from './services/firebase';
 import './App.css';
 
@@ -53,6 +54,7 @@ export default function App() {
   const [error, setError] = useState(null);
   const [isProblemReady, setIsProblemReady] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [validationStatus, setValidationStatus] = useState(''); // '', 'validating', 'reviewing', 'validated'
   const [phase, setPhase] = useState('');
 
   // Sincroniza o estado de visualização do React com a URL Hash (histórico de navegação)
@@ -172,17 +174,49 @@ export default function App() {
     setResult(null);
     setIsProblemReady(false);
     setIsGenerating(true);
-    setView(VIEW.LOADING);
+    setValidationStatus('');
+    
+    // Inicia imediatamente a tela de exercicio com conteudo parcial
+    setProblem({ title: 'Pensando...', description: 'Aguarde, gerando problema...', hints: [], test_cases: [], difficulty, topic });
+    setView(VIEW.EXERCISE);
+
+    let rawJson = "";
+
     try {
-      const data = await generateProblem(topic, difficulty);
-      setProblem(data);
-      setIsProblemReady(true);
-    } catch (err) {
-      const msg = err?.response?.data?.detail || 'Erro ao gerar o problema. Tente novamente.';
-      setError(msg);
-      if (view === VIEW.LOADING) {
-        setView(VIEW.HOME);
+      await generateProblemStream(topic, difficulty, (chunk) => {
+        rawJson += chunk;
+        const partialData = parsePartialJson(rawJson);
+        setProblem(prev => ({ ...prev, ...partialData, difficulty, topic }));
+      });
+      
+      let completeProblem;
+      try {
+        completeProblem = JSON.parse(rawJson);
+      } catch (e) {
+        completeProblem = parsePartialJson(rawJson);
       }
+
+      setProblem({ ...completeProblem, difficulty, topic });
+
+      // Inicia a validacao local pos-streaming
+      setValidationStatus('validating');
+      const valResponse = await validateProblem(completeProblem.solution || "", completeProblem.test_cases || []);
+      
+      if (valResponse.passed) {
+        setValidationStatus('validated');
+        setIsProblemReady(true);
+      } else {
+        setValidationStatus('reviewing');
+        const reviewedProblem = await reviewProblem(completeProblem);
+        setProblem(reviewedProblem);
+        setValidationStatus('validated');
+        setIsProblemReady(true);
+      }
+
+    } catch (err) {
+      const msg = err.message || 'Erro ao gerar o problema. Tente novamente.';
+      setError(msg);
+      setView(VIEW.HOME);
     } finally {
       setIsGenerating(false);
     }
@@ -364,6 +398,8 @@ export default function App() {
               isSubmitting={isSubmitting}
               result={result}
               onBack={handleBack}
+              validationStatus={validationStatus}
+              isGenerating={isGenerating}
             />
           )}
 

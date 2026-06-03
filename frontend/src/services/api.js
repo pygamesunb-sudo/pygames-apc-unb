@@ -29,9 +29,8 @@ api.interceptors.request.use(
 );
 
 /**
- * Gera um problema via pipeline LLM.
- * @param {string} topic - Tema de interesse do usuario.
- * @param {string} difficulty - 'facil' | 'medio' | 'dificil' | 'competitivo'
+ * Gera um problema via pipeline LLM de forma tradicional (bloqueante).
+ * Mantido apenas por compatibilidade legado, se necessário.
  */
 export async function generateProblem(topic, difficulty) {
   const gemini_api_key = localStorage.getItem('gemini_api_key') || null;
@@ -40,6 +39,103 @@ export async function generateProblem(topic, difficulty) {
   const response = await api.post('/api/problems/generate', { 
     topic, 
     difficulty,
+    gemini_api_key,
+    use_custom_key
+  });
+  return response.data;
+}
+
+/**
+ * Gera um problema usando Server-Sent Events (SSE) para streaming progressivo.
+ * @param {string} topic 
+ * @param {string} difficulty 
+ * @param {function} onChunk - Callback acionada com cada chunk de texto puro.
+ */
+export async function generateProblemStream(topic, difficulty, onChunk) {
+  const gemini_api_key = localStorage.getItem('gemini_api_key') || null;
+  const use_custom_key = localStorage.getItem('use_custom_key') === 'true';
+
+  let headers = {
+    'Content-Type': 'application/json',
+  };
+
+  if (auth && auth.currentUser) {
+    const token = await auth.currentUser.getIdToken();
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${api.defaults.baseURL}/api/problems/generate_stream`, {
+    method: 'POST',
+    headers: headers,
+    body: JSON.stringify({
+      topic,
+      difficulty,
+      gemini_api_key,
+      use_custom_key
+    })
+  });
+
+  if (!response.ok) {
+    let errorDetail = "Erro ao conectar ao streaming.";
+    try {
+      const errorData = await response.json();
+      errorDetail = errorData.detail || errorDetail;
+    } catch(e) {}
+    throw new Error(errorDetail);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder("utf-8");
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    
+    const chunk = decoder.decode(value, { stream: true });
+    
+    // Processamento rudimentar de SSE (data: {...})
+    const lines = chunk.split('\n');
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        const dataStr = line.substring(6).trim();
+        if (dataStr === '[DONE]') continue;
+        try {
+          const dataObj = JSON.parse(dataStr);
+          // Suporta tanto formato do openrouter "choices" quanto custom
+          if (dataObj.error) {
+            throw new Error(dataObj.error);
+          }
+          if (dataObj.choices && dataObj.choices[0] && dataObj.choices[0].delta && dataObj.choices[0].delta.content) {
+            onChunk(dataObj.choices[0].delta.content);
+          }
+        } catch (e) {
+          // Ignora JSONs inparseaveis (chunks quebrados) silenciosamente no loop principal
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Valida os casos de teste gerados executando localmente no backend de forma rápida.
+ */
+export async function validateProblem(solution, testCases) {
+  const response = await api.post('/api/problems/validate', {
+    solution,
+    test_cases: testCases
+  });
+  return response.data;
+}
+
+/**
+ * Aciona o agente revisor para consertar um problema reprovado na validação.
+ */
+export async function reviewProblem(problemData) {
+  const gemini_api_key = localStorage.getItem('gemini_api_key') || null;
+  const use_custom_key = localStorage.getItem('use_custom_key') === 'true';
+
+  const response = await api.post('/api/problems/review', {
+    problem_data: problemData,
     gemini_api_key,
     use_custom_key
   });

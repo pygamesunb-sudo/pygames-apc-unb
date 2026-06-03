@@ -4,7 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 /**
  * Tela de resolucao do problema gerado.
  */
-export default function Exercise({ problem, onSubmit, isSubmitting, result, onBack }) {
+export default function Exercise({ problem, onSubmit, isSubmitting, result, onBack, validationStatus, isGenerating }) {
   return (
     <div className="exercise-container animate-fade-in">
       <div className="exercise-header">
@@ -14,7 +14,7 @@ export default function Exercise({ problem, onSubmit, isSubmitting, result, onBa
         </button>
         <div className="flex items-center gap-3">
           <span className="text-muted" style={{ fontSize: '0.85rem' }}>
-            ID: <code className="font-mono text-secondary">{problem.problem_id}</code>
+            ID: <code className="font-mono text-secondary">{problem.problem_id || 'Gerando...'}</code>
           </span>
         </div>
       </div>
@@ -23,6 +23,8 @@ export default function Exercise({ problem, onSubmit, isSubmitting, result, onBa
         onSubmit={onSubmit}
         isSubmitting={isSubmitting}
         result={result}
+        validationStatus={validationStatus}
+        isGenerating={isGenerating}
       />
     </div>
   );
