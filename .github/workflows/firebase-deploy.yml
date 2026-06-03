@@ -31,6 +31,11 @@ jobs:
         working-directory: ./frontend
         run: npm ci
 
+      - name: Setup Frontend Environment
+        working-directory: ./frontend
+        run: |
+          echo "${{ secrets.FRONTEND_ENV }}" > .env
+
       - name: Build Frontend
         working-directory: ./frontend
         run: npm run build
