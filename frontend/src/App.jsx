@@ -62,6 +62,8 @@ export default function App() {
     if (window.location.hash !== `#${view}`) {
       window.location.hash = view;
     }
+    // Rola para o topo da pagina sempre que a view mudar
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [view]);
 
   // Escuta o evento hashchange do navegador para suportar botões de Voltar / Avançar

@@ -244,7 +244,10 @@ export default function ProblemSolver({ problem, onSubmit, isSubmitting, result,
         </div>
         <h2>{problem.title}</h2>
         <div className="divider" />
-        <div className="problem-description">{formatDescription(problem.description)}</div>
+        <div className="problem-description">
+          {formatDescription(problem.description)}
+          {isGenerating && <span className="animate-pulse" style={{ display: 'inline-block', width: '8px', height: '1.2em', background: 'var(--accent-primary)', marginLeft: '4px', verticalAlign: 'middle' }} />}
+        </div>
         
         {/* Renderiza tabela de exemplos dinamica apenas se o enunciado NAO tiver exemplos textuais */}
         {!/exemplo|entrada|saída/i.test(problem.description) && problem.test_cases?.length > 0 && (

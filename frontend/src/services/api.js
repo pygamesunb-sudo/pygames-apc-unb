@@ -86,30 +86,33 @@ export async function generateProblemStream(topic, difficulty, onChunk) {
 
   const reader = response.body.getReader();
   const decoder = new TextDecoder("utf-8");
+  let buffer = '';
 
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
     
-    const chunk = decoder.decode(value, { stream: true });
+    buffer += decoder.decode(value, { stream: true });
     
-    // Processamento rudimentar de SSE (data: {...})
-    const lines = chunk.split('\n');
+    // Processamento de SSE bufferizado
+    const lines = buffer.split('\n');
+    buffer = lines.pop(); // O último pedaço pode estar incompleto, guarda no buffer
+    
     for (const line of lines) {
-      if (line.startsWith('data: ')) {
-        const dataStr = line.substring(6).trim();
+      const trimmedLine = line.trim();
+      if (trimmedLine.startsWith('data:')) {
+        const dataStr = trimmedLine.substring(5).trim();
         if (dataStr === '[DONE]') continue;
         try {
           const dataObj = JSON.parse(dataStr);
-          // Suporta tanto formato do openrouter "choices" quanto custom
           if (dataObj.error) {
             throw new Error(dataObj.error);
           }
-          if (dataObj.choices && dataObj.choices[0] && dataObj.choices[0].delta && dataObj.choices[0].delta.content) {
+          if (dataObj.choices && dataObj.choices[0] && dataObj.choices[0].delta && dataObj.choices[0].delta.content !== undefined) {
             onChunk(dataObj.choices[0].delta.content);
           }
         } catch (e) {
-          // Ignora JSONs inparseaveis (chunks quebrados) silenciosamente no loop principal
+          // Ignora JSON inparseavel
         }
       }
     }
