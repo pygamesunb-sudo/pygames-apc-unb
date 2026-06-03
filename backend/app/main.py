@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 
-from app.routers import problems, submissions, users
+from app.routers import problems, submissions, users, payments
 from app.config import settings
 
 logging.basicConfig(
@@ -27,6 +27,7 @@ app.add_middleware(
 app.include_router(problems.router)
 app.include_router(submissions.router)
 app.include_router(users.router)
+app.include_router(payments.router)
 
 @app.on_event("startup")
 def startup_event():
