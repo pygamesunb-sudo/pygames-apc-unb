@@ -109,6 +109,10 @@ export async function generateProblemStream(topic, difficulty, onChunk) {
             throw new Error(dataObj.error);
           }
           if (dataObj.choices && dataObj.choices[0] && dataObj.choices[0].delta && dataObj.choices[0].delta.content !== undefined) {
+            // FAKE STREAMING: Como o Firebase Hosting faz buffer da resposta, 
+            // forçamos um pequeno delay para que o React consiga renderizar 
+            // o texto sendo digitado progressivamente.
+            await new Promise(r => setTimeout(r, 15));
             onChunk(dataObj.choices[0].delta.content);
           }
         } catch (e) {
