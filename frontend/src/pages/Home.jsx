@@ -18,7 +18,7 @@ const SUGGESTED_TOPICS = [
 /**
  * Pagina inicial. O usuario escolhe o tema e a dificuldade para gerar um problema.
  */
-export default function Home({ onGenerate, onSelectProblem, isLoading }) {
+export default function Home({ onGenerate, onSelectProblem, isLoading, hasActiveProblem, onContinue }) {
   const [topic, setTopic] = useState('');
   const [difficulty, setDifficulty] = useState('facil');
   const [previousProblems, setPreviousProblems] = useState([]);
@@ -58,6 +58,16 @@ export default function Home({ onGenerate, onSelectProblem, isLoading }) {
           De iniciante a programacao competitiva.
         </p>
       </div>
+
+      {hasActiveProblem && (
+        <button
+          onClick={onContinue}
+          className="btn-primary w-full animate-glow"
+          style={{ marginBottom: '24px', backgroundColor: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+        >
+          <span style={{ fontSize: '1.2rem' }}>🎮</span> Continuar Problema Atual em Andamento
+        </button>
+      )}
 
       {/* Formulario */}
       <form className="generate-form card animate-fade-in" onSubmit={handleSubmit} style={{ animationDelay: '0.1s' }}>
