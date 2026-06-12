@@ -16,13 +16,9 @@ import Exercise from './pages/Exercise';
 import MiniGame from './components/MiniGame';
 import Leaderboard from './components/Leaderboard';
 import SubmissionHistory from './components/SubmissionHistory';
-import ApiDocs from './pages/ApiDocs';
 import LandingPage from './pages/LandingPage';
-import Navbar from './components/Navbar';
-import BottomNav from './components/BottomNav';
 
-import { generateProblemStream, validateProblem, reviewProblem, submitCode, getUserProfile, firebaseLogin } from './services/api';
-import { parsePartialJson } from './utils/partialJsonParser';
+import { generateProblem, submitCode, getUserProfile, firebaseLogin } from './services/api';
 import { auth, loginWithGoogle, logout, onAuthStateChanged } from './services/firebase';
 import { formatError } from './utils/formatError';
 import './App.css';
