@@ -17,9 +17,10 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     from app.config import settings
     from app.services.firebase_admin_init import ensure_firebase_initialized
 
+    # Extrai apenas o token bruto, sem o prefixo "Bearer".
     token = credentials.credentials
 
-    # Suporte a E2E testing bypass local e seguro
+    # Atalho de autenticacao para testes automatizados controlados.
     if token == "mock-testing-token-apc" and (os.getenv("TESTING_BYPASS_AUTH") == "true" or settings.testing_bypass_auth):
         return {
             "uid": "test-user-uid-12345",
@@ -27,6 +28,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             "name": "Jogador de Testes"
         }
 
+    # Garante SDK do Firebase pronto antes de validar JWT.
     try:
         ensure_firebase_initialized()
     except Exception as e:

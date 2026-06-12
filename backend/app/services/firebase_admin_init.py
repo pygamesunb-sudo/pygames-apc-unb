@@ -11,9 +11,11 @@ logger = logging.getLogger(__name__)
 
 def ensure_firebase_initialized() -> None:
     """Inicializa o Firebase Admin SDK uma unica vez, se ainda nao estiver ativo."""
+    # Evita reinicializar o SDK em cada requisicao autenticada.
     if firebase_admin._apps:
         return
 
+    # Ordem de prioridade: variavel de ambiente, settings e caminho legado.
     credential_path = (
         os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
         or settings.google_application_credentials
@@ -28,12 +30,14 @@ def ensure_firebase_initialized() -> None:
             return
 
         try:
+            # Tenta usar as credenciais padrao do GCP/Firebase (producao).
             firebase_admin.initialize_app()
             logger.info("Firebase Admin SDK inicializado com credenciais padrao do ambiente.")
             return
         except Exception:
             import google.auth.credentials
 
+            # Fallback local sem credenciais reais (desenvolvimento).
             firebase_admin.initialize_app(
                 credential=google.auth.credentials.AnonymousCredentials(),
                 options={"projectId": settings.firebase_project_id},

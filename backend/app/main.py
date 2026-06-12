@@ -28,7 +28,7 @@ app.add_middleware(
 )
 
 # Registro das rotas separadas por dominio de negocio.
-app.include_router(auth.router)
+app.include_router(auth.router)  # Login Firebase (Google) e validacao de token.
 app.include_router(problems.router)
 app.include_router(submissions.router)
 app.include_router(users.router)
