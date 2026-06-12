@@ -12,13 +12,14 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     Dependencia do FastAPI para verificar o Firebase ID Token (JWT) enviado pelo frontend.
     Retorna o dicionario decodificado com as informacoes do usuario caso seja valido.
     """
-    # Extrai apenas o token bruto, sem o prefixo "Bearer".
-    token = credentials.credentials
     import os
-    import firebase_admin
-    from firebase_admin import credentials as fb_credentials
+
     from app.config import settings
-    # Atalho de autenticacao para testes automatizados controlados.
+    from app.services.firebase_admin_init import ensure_firebase_initialized
+
+    token = credentials.credentials
+
+    # Suporte a E2E testing bypass local e seguro
     if token == "mock-testing-token-apc" and (os.getenv("TESTING_BYPASS_AUTH") == "true" or settings.testing_bypass_auth):
         return {
             "uid": "test-user-uid-12345",
@@ -26,27 +27,10 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             "name": "Jogador de Testes"
         }
 
-    # Garante SDK do Firebase pronto antes de validar JWT.
-    if not firebase_admin._apps:
-        try:
-            if os.path.exists(settings.fb_credentials_path):
-                cred = fb_credentials.Certificate(settings.fb_credentials_path)
-                firebase_admin.initialize_app(cred)
-            else:
-                try:
-                    # Tenta usar as credenciais padrão do GCP/Firebase (produção)
-                    firebase_admin.initialize_app()
-                except Exception:
-                    # Fallback local sem credenciais
-                    import google.auth.credentials
-                    firebase_admin.initialize_app(
-                        credential=google.auth.credentials.AnonymousCredentials(),
-                        options={
-                            'projectId': settings.firebase_project_id
-                        }
-                    )
-        except Exception as e:
-            logger.warning("Falha ao inicializar o Firebase Admin SDK no middleware de auth: %s", e)
+    try:
+        ensure_firebase_initialized()
+    except Exception as e:
+        logger.warning("Falha ao inicializar o Firebase Admin SDK no middleware de auth: %s", e)
 
     try:
         # Verifica o token com o Firebase Admin SDK

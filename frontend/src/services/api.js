@@ -112,4 +112,12 @@ export async function saveGeminiConfig(gemini_api_key, use_custom_key) {
   return response.data;
 }
 
+/**
+ * Valida o ID Token Firebase no backend apos login com Google.
+ */
+export async function firebaseLogin(token) {
+  const response = await api.post('/auth/firebase-login', { token });
+  return response.data;
+}
+
 export default api;

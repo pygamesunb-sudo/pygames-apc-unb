@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     openrouter_model: str = "nvidia/nemotron-3-super-120b-a12b:free"
     # Caminho local de credenciais de servico do Firebase (quando existir).
     fb_credentials_path: str = "./firebase_credentials.json"
+    google_application_credentials: str = ""
     firebase_project_id: str = "pygames-apc"
     api_host: str = "0.0.0.0"
     api_port: int = 8000

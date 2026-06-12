@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 
-from app.routers import problems, submissions, users
+from app.routers import problems, submissions, users, auth
 from app.config import settings
 
 # Padrao de logs usado por toda a API para facilitar leitura no console.
@@ -28,6 +28,7 @@ app.add_middleware(
 )
 
 # Registro das rotas separadas por dominio de negocio.
+app.include_router(auth.router)
 app.include_router(problems.router)
 app.include_router(submissions.router)
 app.include_router(users.router)
