@@ -107,7 +107,7 @@ Você está gerando um problema de PROGRAMAÇÃO COMPETITIVA.
 }
 
 
-async def _call_gemini_api(messages: list[dict], api_key: str, temperature: float = 0.7) -> str:
+async def _call_gemini_api(messages: list[dict], api_key: str, temperature: float = 0.8) -> str:
     """Realiza uma chamada direta a API oficial do Google Gemini com a chave do usuario."""
     system_instruction = ""
     contents = []

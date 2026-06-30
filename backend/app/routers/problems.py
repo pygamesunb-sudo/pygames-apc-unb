@@ -47,7 +47,11 @@ async def generate_problem_stream_endpoint(body: GenerateProblemRequest, user: d
             gemini_api_key=body.gemini_api_key,
             use_custom_key=body.use_custom_key
         ),
-        media_type="text/event-stream"
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no"
+        }
     )
 
 

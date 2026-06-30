@@ -13,74 +13,18 @@ from app.main import app as fastapi_app
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-async def run_asgi(asgi_app, req: https_fn.Request) -> https_fn.Response:
-    # Build the ASGI scope from the Werkzeug/Firebase Request
-    headers = []
-    for key, value in req.headers.items():
-        headers.append((key.lower().encode('latin-1'), value.encode('latin-1')))
-        
-    scope = {
-        'type': 'http',
-        'asgi': {'version': '3.0', 'spec_version': '2.0'},
-        'http_version': '1.1',
-        'method': req.method,
-        'path': req.path,
-        'raw_path': req.path.encode('utf-8'),
-        'query_string': req.query_string,
-        'headers': headers,
-        'server': (req.host or 'localhost', 80),
-        'client': (req.remote_addr or '127.0.0.1', 0),
-    }
+from a2wsgi import ASGIMiddleware
 
-    body = req.get_data()
-    body_received = False
-
-    async def receive():
-        nonlocal body_received
-        if not body_received:
-            body_received = True
-            return {
-                'type': 'http.request',
-                'body': body,
-                'more_body': False
-            }
-        else:
-            return {
-                'type': 'http.disconnect'
-            }
-
-    response_status = 200
-    response_headers = []
-    response_body = []
-
-    async def send(message):
-        nonlocal response_status, response_headers
-        if message['type'] == 'http.response.start':
-            response_status = message['status']
-            for key, val in message.get('headers', []):
-                response_headers.append((key.decode('latin-1'), val.decode('latin-1')))
-        elif message['type'] == 'http.response.body':
-            response_body.append(message.get('body', b''))
-
-    await asgi_app(scope, receive, send)
-
-    headers_dict = {}
-    for k, v in response_headers:
-        if k.lower() not in ['content-length', 'transfer-encoding']:
-            headers_dict[k] = v
-
-    full_body = b''.join(response_body)
-    return https_fn.Response(
-        response=full_body,
-        status=response_status,
-        headers=headers_dict
-    )
+# Convert ASGI app to WSGI to run inside Firebase Functions (which uses WSGI/Flask under the hood)
+wsgi_app = ASGIMiddleware(fastapi_app)
 
 @https_fn.on_request()
 def api(req: https_fn.Request) -> https_fn.Response:
     try:
-        # Run the ASGI app using asyncio.run to avoid nested event loop deadlocks
-        return asyncio.run(run_asgi(fastapi_app, req))
+        # Use Werkzeug's from_app to run the WSGI application and get the Response,
+        # preserving streaming capabilities (buffered=False by default).
+        return https_fn.Response.from_app(wsgi_app, req.environ)
     except Exception as e:
         logger.exception("Error processing request in Firebase Function api")
         return https_fn.Response(f"Internal Server Error: {e}", status=500)
+

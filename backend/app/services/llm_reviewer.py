@@ -235,7 +235,7 @@ async def _call_reviewer_llm(messages: list[dict]) -> dict:
         payload = {
             "model": model,
             "messages": messages,
-            "temperature": 0.3,
+            "temperature": 0.8,
         }
         
         max_retries = 3
