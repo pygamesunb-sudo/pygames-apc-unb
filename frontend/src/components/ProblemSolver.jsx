@@ -222,7 +222,7 @@ export default function ProblemSolver({ problem, onSubmit, isSubmitting, result,
   const [code, setCode] = useState('');
 
   const handleSubmit = () => {
-    if (!code.trim()) return;
+    if (!code.trim() || isSubmitting || isGenerating || validationStatus === 'validating' || validationStatus === 'reviewing') return;
     onSubmit(code);
   };
 
