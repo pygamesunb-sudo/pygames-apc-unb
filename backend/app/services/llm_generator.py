@@ -128,7 +128,7 @@ async def _call_gemini_api(messages: list[dict], api_key: str, temperature: floa
             "parts": [{"text": "Gere o problema solicitado."}]
         })
         
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key={api_key}"
     
     payload = {
         "contents": contents,
