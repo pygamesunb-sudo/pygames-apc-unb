@@ -169,3 +169,88 @@ async def test_generate_problem_stream_error_propagation_429(mock_stream_method)
         
     assert len(yielded_chunks) == 1
     assert "429 Too Many Requests" in yielded_chunks[0]
+
+
+@pytest.mark.asyncio
+@patch("app.services.llm_generator.httpx.AsyncClient.stream")
+async def test_generate_problem_stream_gemini_missing_key_fallback(mock_stream_method):
+    """Testa se o stream usa o fallback do OpenRouter caso use_custom_key seja True mas a chave Gemini esteja vazia/nula."""
+    chunks = ['data: {"choices": [{"delta": {"content": "Fallback OpenRouter"}}]}\n\n']
+    mock_resp = MockResponse(200, chunks)
+    mock_stream_method.return_value = MockStreamContext(mock_resp)
+    
+    yielded_chunks = []
+    async for chunk in generate_problem_stream(
+        topic="Lists", 
+        difficulty="facil", 
+        gemini_api_key=None, 
+        use_custom_key=True
+    ):
+        yielded_chunks.append(chunk)
+        
+    assert len(yielded_chunks) == 1
+    assert "Fallback OpenRouter" in yielded_chunks[0]
+
+
+@pytest.mark.asyncio
+@patch("app.services.llm_generator.httpx.AsyncClient.stream")
+async def test_generate_problem_stream_empty_chunks_filtered(mock_stream_method):
+    """Testa se o gerador filtra e ignora pedacos de texto vazios na resposta da LLM."""
+    chunks = ["", "data: token1\n\n", "", "data: token2\n\n"]
+    mock_resp = MockResponse(200, chunks)
+    mock_stream_method.return_value = MockStreamContext(mock_resp)
+    
+    yielded_chunks = []
+    async for chunk in _call_llm_stream(messages=[], temperature=0.8):
+        yielded_chunks.append(chunk)
+        
+    # Deve yieldar apenas os chunks que possuem conteudo (filtrou as strings vazias "")
+    assert len(yielded_chunks) == 2
+    assert yielded_chunks[0] == "data: token1\n\n"
+    assert yielded_chunks[1] == "data: token2\n\n"
+
+
+@pytest.mark.asyncio
+@patch("app.services.llm_generator.httpx.AsyncClient.stream")
+async def test_generate_problem_stream_openrouter_general_error_propagation(mock_stream_method):
+    """Testa se o gerador de stream propaga excecoes de status HTTP gerais (como 500) do OpenRouter."""
+    mock_resp = MockResponse(500, [])
+    mock_stream_method.return_value = MockStreamContext(mock_resp)
+    
+    with pytest.raises(httpx.HTTPStatusError):
+        async for _ in _call_llm_stream(messages=[], temperature=0.8):
+            pass
+
+
+@pytest.mark.asyncio
+@patch("app.services.llm_generator.httpx.AsyncClient.stream")
+async def test_generate_problem_stream_custom_difficulty_keys(mock_stream_method):
+    """Verifica se o gerador aceita variantes de texto das chaves de dificuldade (ex: FACIL, Medio) e processa corretamente."""
+    chunks = ['data: {"choices": [{"delta": {"content": "Desafio"}}]}\n\n']
+    mock_resp = MockResponse(200, chunks)
+    mock_stream_method.return_value = MockStreamContext(mock_resp)
+    
+    # Executa com dificuldade em formato misto e maiuscula
+    yielded_chunks = []
+    async for chunk in generate_problem_stream("Variables", "FACIL", use_custom_key=False):
+        yielded_chunks.append(chunk)
+    assert len(yielded_chunks) == 1
+    
+    yielded_chunks2 = []
+    async for chunk in generate_problem_stream("Variables", "Medio", use_custom_key=False):
+        yielded_chunks2.append(chunk)
+    assert len(yielded_chunks2) == 1
+
+
+def test_generate_stream_endpoint_unauthorized():
+    """Testa se a chamada ao endpoint de streaming retorna 401 Unauthorized se o token de auth estiver ausente ou incorreto."""
+    body = {
+        "topic": "Loops",
+        "difficulty": "facil"
+    }
+    
+    # Chamada sem headers de autenticação
+    response = client.post("/api/problems/generate_stream", json=body)
+    assert response.status_code == 401
+    assert "Unauthorized" in response.text or "detail" in response.json()
+
