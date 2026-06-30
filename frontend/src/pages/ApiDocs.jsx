@@ -226,7 +226,7 @@ export default function ApiDocs({ currentUser, userProfile, setUserProfile }) {
   const [loadingExec, setLoadingExec] = useState({});
   const [resultsExec, setResultsExec] = useState({});
 
-  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+  const apiBaseUrl = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? window.location.origin : 'http://localhost:8000');
 
   const handleCopy = (text, id) => {
     navigator.clipboard.writeText(text);
