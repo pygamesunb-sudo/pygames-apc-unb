@@ -176,7 +176,7 @@ export default function SubmissionHistory({ onBack }) {
             </div>
             <div className="submission-modal-editor-container">
               <Editor
-                height="100%"
+                height="400px"
                 defaultLanguage="python"
                 value={selectedSubmission.code}
                 theme="vs-dark"
