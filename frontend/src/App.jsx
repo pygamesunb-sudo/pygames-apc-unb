@@ -199,6 +199,10 @@ export default function App() {
         completeProblem = parsePartialJson(rawJson);
       }
 
+      if (!completeProblem || !completeProblem.title || !completeProblem.description) {
+        throw new Error("Não foi possível gerar um problema de programação válido (JSON corrompido ou incompleto). Por favor, tente novamente.");
+      }
+
       setProblem({ ...completeProblem, difficulty, topic });
 
       // Inicia a validacao local pos-streaming

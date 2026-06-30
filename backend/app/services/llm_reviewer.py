@@ -165,7 +165,7 @@ async def _call_reviewer_gemini_api(messages: list[dict], api_key: str) -> dict:
             "parts": [{"text": "Revise o problema."}]
         })
         
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
     
     payload = {
         "contents": contents,

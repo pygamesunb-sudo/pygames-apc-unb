@@ -176,7 +176,7 @@ export default function Home({ onGenerate, onSelectProblem, isLoading, hasActive
                 style={{ fontSize: '0.8rem', padding: '8px 12px', width: '100%', boxSizing: 'border-box' }}
               />
               <div className="api-key-info-row">
-                <span>Modelo Fixo: <strong style={{ color: '#818cf8' }}>gemini-3.1-flash-lite</strong></span>
+                <span>Modelo Fixo: <strong style={{ color: '#818cf8' }}>gemini-1.5-flash</strong></span>
                 <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px' }}>Sincronizado na sua conta</span>
               </div>
             </div>

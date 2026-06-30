@@ -128,7 +128,7 @@ async def _call_gemini_api(messages: list[dict], api_key: str, temperature: floa
             "parts": [{"text": "Gere o problema solicitado."}]
         })
         
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
     
     payload = {
         "contents": contents,
@@ -372,36 +372,42 @@ async def generate_problem_stream(
     Agente 1 (Gerador): Chama a LLM para criar o problema completo via STREAM.
     Cede (yields) os chunks de texto recebidos para envio via SSE.
     """
-    logger.info(
-        "Gerando problema (STREAM): topico='%s', dificuldade='%s', use_custom_key=%s", 
-        topic, difficulty, use_custom_key
-    )
+    try:
+        logger.info(
+            "Gerando problema (STREAM): topico='%s', dificuldade='%s', use_custom_key=%s", 
+            topic, difficulty, use_custom_key
+        )
 
-    user_message = (
-        f"Crie um problema de programacao Python com dificuldade '{difficulty}' "
-        f"com tema: '{topic}'. Seja criativo e divertido!"
-    )
+        user_message = (
+            f"Crie um problema de programacao Python com dificuldade '{difficulty}' "
+            f"com tema: '{topic}'. Seja criativo e divertido!"
+        )
 
-    difficulty_key = difficulty.lower()
-    difficulty_instructions = DIFFICULTY_TEMPLATES.get(difficulty_key, DIFFICULTY_TEMPLATES["medio"])
-    
-    system_content = f"{GENERATOR_SYSTEM_PROMPT}\n\n{difficulty_instructions}"
+        difficulty_key = difficulty.lower()
+        difficulty_instructions = DIFFICULTY_TEMPLATES.get(difficulty_key, DIFFICULTY_TEMPLATES["medio"])
+        
+        system_content = f"{GENERATOR_SYSTEM_PROMPT}\n\n{difficulty_instructions}"
 
-    messages = [
-        {"role": "system", "content": system_content},
-        {"role": "user", "content": user_message},
-    ]
+        messages = [
+            {"role": "system", "content": system_content},
+            {"role": "user", "content": user_message},
+        ]
 
-    if use_custom_key and gemini_api_key:
-        # Nota: Gemini oficial tem endpoint de stream diferente, mas vamos apenas
-        # mandar a chamada comum aqui se usar API key direta (fazer wrapper dps)
-        # O ideal seria usar o aiter_lines() do stream do gemini
-        logger.warning("Streaming ainda nao totalmente implementado para gemini direto. Retornando em bloco.")
-        resp = await _call_gemini_api(messages, api_key=gemini_api_key, temperature=0.8)
-        # Simula o stream do openrouter
+        if use_custom_key and gemini_api_key:
+            # Nota: Gemini oficial tem endpoint de stream diferente, mas vamos apenas
+            # mandar a chamada comum aqui se usar API key direta (fazer wrapper dps)
+            # O ideal seria usar o aiter_lines() do stream do gemini
+            logger.warning("Streaming ainda nao totalmente implementado para gemini direto. Retornando em bloco.")
+            resp = await _call_gemini_api(messages, api_key=gemini_api_key, temperature=0.8)
+            # Simula o stream do openrouter
+            import json
+            payload = json.dumps({"choices": [{"delta": {"content": resp}}]})
+            yield f"data: {payload}\n\n"
+        else:
+            async for chunk in _call_llm_stream(messages, temperature=0.8):
+                yield chunk
+    except Exception as e:
+        logger.exception("Erro durante o streaming da LLM.")
         import json
-        payload = json.dumps({"choices": [{"delta": {"content": resp}}]})
+        payload = json.dumps({"error": f"Erro interno de streaming da LLM: {str(e)}"})
         yield f"data: {payload}\n\n"
-    else:
-        async for chunk in _call_llm_stream(messages, temperature=0.8):
-            yield chunk

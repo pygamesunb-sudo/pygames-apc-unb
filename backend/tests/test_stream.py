@@ -254,3 +254,40 @@ def test_generate_stream_endpoint_unauthorized():
     assert response.status_code == 401
     assert "Unauthorized" in response.text or "detail" in response.json()
 
+
+@pytest.mark.asyncio
+@patch("app.services.llm_generator._call_gemini_api")
+async def test_generate_problem_stream_gemini_exception_handling(mock_gemini_call):
+    """Testa se excecoes levantadas pela chamada direta do Gemini sao capturadas e formatadas como chunk de erro SSE."""
+    mock_gemini_call.side_effect = Exception("Model not found or invalid API key (404)")
+    
+    yielded_chunks = []
+    async for chunk in generate_problem_stream("Recursion", "facil", gemini_api_key="invalid_key", use_custom_key=True):
+        yielded_chunks.append(chunk)
+        
+    assert len(yielded_chunks) == 1
+    assert "error" in yielded_chunks[0]
+    data = json.loads(yielded_chunks[0].replace("data:", "").strip())
+    assert "Erro interno de streaming da LLM" in data["error"]
+
+
+@pytest.mark.asyncio
+@patch("app.services.llm_generator._call_llm_stream")
+async def test_generate_problem_stream_openrouter_exception_handling(mock_openrouter_stream):
+    """Testa se excecoes levantadas durante o stream do OpenRouter sao capturadas e formatadas como chunk de erro SSE."""
+    # Define o generator mockado para levantar excecao
+    async def mock_generator(*args, **kwargs):
+        raise httpx.ConnectError("Connection timed out to OpenRouter")
+        yield "never reached"
+        
+    mock_openrouter_stream.side_effect = mock_generator
+    
+    yielded_chunks = []
+    async for chunk in generate_problem_stream("Recursion", "facil", use_custom_key=False):
+        yielded_chunks.append(chunk)
+        
+    assert len(yielded_chunks) == 1
+    assert "error" in yielded_chunks[0]
+    data = json.loads(yielded_chunks[0].replace("data:", "").strip())
+    assert "Connection timed out to OpenRouter" in data["error"]
+

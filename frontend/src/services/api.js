@@ -103,31 +103,35 @@ export async function generateProblemStream(topic, difficulty, onChunk) {
       if (trimmedLine.startsWith('data:')) {
         const dataStr = trimmedLine.substring(5).trim();
         if (dataStr === '[DONE]') continue;
+        let dataObj;
         try {
-          const dataObj = JSON.parse(dataStr);
-          if (dataObj.error) {
-            throw new Error(dataObj.error);
-          }
-          if (dataObj.choices && dataObj.choices[0] && dataObj.choices[0].delta && dataObj.choices[0].delta.content !== undefined) {
-            const content = dataObj.choices[0].delta.content;
-            // Se o conteúdo veio acumulado em bloco (maior que 15 chars), simulamos a digitação progressiva
-            if (content.length > 15) {
-              let i = 0;
-              const chunkSize = 3;
-              while (i < content.length) {
-                const subChunk = content.substring(i, i + chunkSize);
-                onChunk(subChunk);
-                await new Promise(r => setTimeout(r, 10));
-                i += chunkSize;
-              }
-            } else {
-              // Comportamento padrão de stream token a token
-              await new Promise(r => setTimeout(r, 15));
-              onChunk(content);
-            }
-          }
+          dataObj = JSON.parse(dataStr);
         } catch (e) {
           // Ignora JSON inparseavel
+          continue;
+        }
+
+        if (dataObj.error) {
+          throw new Error(typeof dataObj.error === 'string' ? dataObj.error : JSON.stringify(dataObj.error));
+        }
+
+        if (dataObj.choices && dataObj.choices[0] && dataObj.choices[0].delta && dataObj.choices[0].delta.content !== undefined) {
+          const content = dataObj.choices[0].delta.content;
+          // Se o conteúdo veio acumulado em bloco (maior que 15 chars), simulamos a digitação progressiva
+          if (content.length > 15) {
+            let i = 0;
+            const chunkSize = 3;
+            while (i < content.length) {
+              const subChunk = content.substring(i, i + chunkSize);
+              onChunk(subChunk);
+              await new Promise(r => setTimeout(r, 10));
+              i += chunkSize;
+            }
+          } else {
+            // Comportamento padrão de stream token a token
+            await new Promise(r => setTimeout(r, 15));
+            onChunk(content);
+          }
         }
       }
     }
