@@ -109,11 +109,22 @@ export async function generateProblemStream(topic, difficulty, onChunk) {
             throw new Error(dataObj.error);
           }
           if (dataObj.choices && dataObj.choices[0] && dataObj.choices[0].delta && dataObj.choices[0].delta.content !== undefined) {
-            // FAKE STREAMING: Como o Firebase Hosting faz buffer da resposta, 
-            // forçamos um pequeno delay para que o React consiga renderizar 
-            // o texto sendo digitado progressivamente.
-            await new Promise(r => setTimeout(r, 15));
-            onChunk(dataObj.choices[0].delta.content);
+            const content = dataObj.choices[0].delta.content;
+            // Se o conteúdo veio acumulado em bloco (maior que 15 chars), simulamos a digitação progressiva
+            if (content.length > 15) {
+              let i = 0;
+              const chunkSize = 3;
+              while (i < content.length) {
+                const subChunk = content.substring(i, i + chunkSize);
+                onChunk(subChunk);
+                await new Promise(r => setTimeout(r, 10));
+                i += chunkSize;
+              }
+            } else {
+              // Comportamento padrão de stream token a token
+              await new Promise(r => setTimeout(r, 15));
+              onChunk(content);
+            }
           }
         } catch (e) {
           // Ignora JSON inparseavel
