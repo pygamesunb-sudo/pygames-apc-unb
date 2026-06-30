@@ -188,6 +188,7 @@ export default function App() {
       await generateProblemStream(topic, difficulty, (chunk) => {
         rawJson += chunk;
         const partialData = parsePartialJson(rawJson);
+        console.log("App.jsx onChunk callback: partial description length =", partialData?.description?.length, "title =", partialData?.title);
         setProblem(prev => ({ ...prev, ...partialData, difficulty, topic }));
       });
       

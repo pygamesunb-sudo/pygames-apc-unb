@@ -218,6 +218,7 @@ const formatDescription = (text) => {
 
 /* ---------------------- Componente Principal --------------------- */
 export default function ProblemSolver({ problem, onSubmit, isSubmitting, result, validationStatus, isGenerating }) {
+  console.log("ProblemSolver render: description length =", problem?.description?.length, "title =", problem?.title);
   const [activeMode, setActiveMode] = useState('free-typing');
   const [code, setCode] = useState('');
 
