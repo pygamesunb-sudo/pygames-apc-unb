@@ -176,7 +176,6 @@ async def _call_llm(messages: list[dict], temperature: float = 0.7) -> str:
         
     fallback_list = [
         "nvidia/nemotron-3-super-120b-a12b:free",
-        "google/gemini-2.5-flash:free",
         "meta-llama/llama-3.3-70b-instruct:free",
         "meta-llama/llama-3.2-3b-instruct:free"
     ]
@@ -344,7 +343,6 @@ async def _call_llm_stream(messages: list[dict], temperature: float = 0.8):
         
     fallback_list = [
         "nvidia/nemotron-3-super-120b-a12b:free",
-        "google/gemini-2.5-flash:free",
         "meta-llama/llama-3.3-70b-instruct:free",
         "meta-llama/llama-3.2-3b-instruct:free"
     ]
