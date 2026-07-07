@@ -32,7 +32,8 @@ app.include_router(payments.router)
 @app.on_event("startup")
 def startup_event():
     logger = logging.getLogger(__name__)
-    logger.info("FastAPI startup event triggered. Settings loaded from environment/local .env.")
+    logger.info("FastAPI startup event triggered. Loading settings from Firebase Firestore...")
+    settings.load_from_firebase()
 
 @app.get("/health", tags=["health"])
 async def health_check():

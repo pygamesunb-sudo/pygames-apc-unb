@@ -5,6 +5,9 @@ import os
 # Adiciona o diretório backend ao sys.path para permitir importações corretas
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from app.config import settings
+settings.load_from_firebase()
+
 from app.services.llm_generator import generate_problem_stream
 
 async def run_check():

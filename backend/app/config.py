@@ -5,6 +5,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ENV_PATH = os.path.join(BASE_DIR, ".env")
 
+_firebase_loaded = False
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=ENV_PATH, env_file_encoding="utf-8")
 
@@ -21,6 +23,10 @@ class Settings(BaseSettings):
         Carrega configuracoes do .env direto do Firebase Firestore para permitir
         armazenamento de variaveis confidenciais na nuvem de forma segura.
         """
+        global _firebase_loaded
+        if _firebase_loaded:
+            return
+        _firebase_loaded = True
         import threading
 
         def run_load():
@@ -135,9 +141,4 @@ class Settings(BaseSettings):
         run_load()
 
 settings = Settings()
-
-# Evita carregar automaticamente do Firebase durante a execução de testes
-import sys
-if "pytest" not in sys.modules and "unittest" not in sys.modules and not os.environ.get("PYTEST_CURRENT_TEST"):
-    settings.load_from_firebase()
 
