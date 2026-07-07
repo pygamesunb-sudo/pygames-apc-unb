@@ -8,19 +8,28 @@ export function parsePartialJson(jsonString) {
 
   let s = jsonString.trim();
   
-  // Se comecar com marcacao de markdown ```json, remove
-  if (s.startsWith('```json')) {
-    s = s.substring(7);
-  }
-  if (s.startsWith('```')) {
-    s = s.substring(3);
+  // Se contiver '{', remove tudo que vem antes do primeiro '{'
+  // (trata marcações markdown ```json ou introduções textuais da LLM)
+  const firstBrace = s.indexOf('{');
+  if (firstBrace !== -1) {
+    s = s.substring(firstBrace);
   }
   
   // Tenta parsear direto
   try {
     // Tira os marcadores finais se houver
     let clean = s;
-    if (clean.endsWith('```')) clean = clean.substring(0, clean.length - 3);
+    if (clean.endsWith('```')) clean = clean.substring(0, clean.length - 3).trim();
+    
+    // Tenta encontrar o último '}' e ver se conseguimos parsear a string cortada até ele
+    // (trata conclusões textuais ou marcadores markdown no final da resposta)
+    const lastBrace = clean.lastIndexOf('}');
+    if (lastBrace !== -1) {
+      try {
+        return JSON.parse(clean.substring(0, lastBrace + 1));
+      } catch (e) {}
+    }
+    
     return JSON.parse(clean);
   } catch (e) {
     // Falhou, esta incompleto.

@@ -10,17 +10,15 @@ client = TestClient(app)
 def clean_test_user():
     """Limpa o usuario de testes padrao do Firestore antes e apos cada teste."""
     db = firebase_service.get_db()
-    if db is not None:
-        try:
-            db.collection("users").document("test-user-uid-12345").delete()
-        except Exception as e:
-            print(f"[clean_test_user BEFORE] Erro ao deletar: {e}")
+    try:
+        db.collection("users").document("test-user-uid-12345").delete()
+    except Exception as e:
+        print(f"[clean_test_user BEFORE] Erro ao deletar: {e}")
     yield
-    if db is not None:
-        try:
-            db.collection("users").document("test-user-uid-12345").delete()
-        except Exception as e:
-            print(f"[clean_test_user AFTER] Erro ao deletar: {e}")
+    try:
+        db.collection("users").document("test-user-uid-12345").delete()
+    except Exception as e:
+        print(f"[clean_test_user AFTER] Erro ao deletar: {e}")
 
 def test_get_profile_endpoint():
     response = client.get(

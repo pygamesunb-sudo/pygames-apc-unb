@@ -7,3 +7,4 @@ def test_load_from_firebase():
     settings.load_from_firebase()
     # Verifica que o objeto de settings e as propriedades continuam validas
     assert settings.firebase_project_id == "pygames-apc"
+

@@ -219,8 +219,8 @@ async def _call_reviewer_llm(messages: list[dict]) -> dict:
         models_to_try.append("openrouter/free")
         
     fallback_list = [
-        "openai/gpt-oss-120b:free",
         "nvidia/nemotron-3-super-120b-a12b:free",
+        "google/gemini-2.5-flash:free",
         "meta-llama/llama-3.3-70b-instruct:free",
         "meta-llama/llama-3.2-3b-instruct:free"
     ]

@@ -175,8 +175,8 @@ async def _call_llm(messages: list[dict], temperature: float = 0.7) -> str:
         models_to_try.append("openrouter/free")
         
     fallback_list = [
-        "openai/gpt-oss-120b:free",
         "nvidia/nemotron-3-super-120b-a12b:free",
+        "google/gemini-2.5-flash:free",
         "meta-llama/llama-3.3-70b-instruct:free",
         "meta-llama/llama-3.2-3b-instruct:free"
     ]
@@ -337,29 +337,78 @@ async def _call_llm_stream(messages: list[dict], temperature: float = 0.8):
         "X-Title": "Pygame-APC",
     }
     
-    # Lista de modelos para tentar
-    model = settings.openrouter_model
-    logger.info("Tentando chamada a LLM STREAM com o modelo: %s", model)
-    
-    payload = {
-        "model": model,
-        "messages": messages,
-        "temperature": temperature,
-        "stream": True,
-    }
-    
-    async with httpx.AsyncClient(timeout=120.0) as client:
-        async with client.stream("POST", OPENROUTER_API_URL, headers=headers, json=payload) as response:
-            if response.status_code == 429:
-                yield "data: {\"error\": \"429 Too Many Requests. Tente novamente mais tarde.\"}\n\n"
-                return
-            response.raise_for_status()
+    # Lista de modelos para tentar em caso de falha (404, 429 ou erro de modelo inválido)
+    models_to_try = [settings.openrouter_model]
+    if settings.openrouter_model != "openrouter/free":
+        models_to_try.append("openrouter/free")
+        
+    fallback_list = [
+        "nvidia/nemotron-3-super-120b-a12b:free",
+        "google/gemini-2.5-flash:free",
+        "meta-llama/llama-3.3-70b-instruct:free",
+        "meta-llama/llama-3.2-3b-instruct:free"
+    ]
+    for model in fallback_list:
+        if model not in models_to_try:
+            models_to_try.append(model)
             
-            async for chunk in response.aiter_text():
-                # Em um stream SSE (Server Sent Events), o content geralmente vem assim: 
-                # data: {"id":"...", "choices":[{"delta":{"content":"..."}}]}
-                if chunk:
-                    yield chunk
+    last_exception = None
+    
+    for model in models_to_try:
+        logger.info("Tentando chamada a LLM STREAM com o modelo: %s", model)
+        payload = {
+            "model": model,
+            "messages": messages,
+            "temperature": temperature,
+            "stream": True,
+        }
+        
+        max_retries = 3
+        backoff_factor = 2.0
+        success = False
+        
+        for attempt in range(max_retries):
+            try:
+                async with httpx.AsyncClient(timeout=120.0) as client:
+                    async with client.stream("POST", OPENROUTER_API_URL, headers=headers, json=payload) as response:
+                        if response.status_code == 429:
+                            if attempt < max_retries - 1:
+                                sleep_time = backoff_factor * (2 ** attempt) + random.uniform(0.1, 0.5)
+                                logger.warning(
+                                    "Modelo STREAM %s retornou 429 (Too Many Requests). Nova tentativa em %.2fs... (%d/%d)",
+                                    model, sleep_time, attempt + 1, max_retries
+                                )
+                                await asyncio.sleep(sleep_time)
+                                continue
+                        
+                        response.raise_for_status()
+                        
+                        success = True
+                        async for chunk in response.aiter_text():
+                            if chunk:
+                                yield chunk
+                        return
+            except (httpx.HTTPStatusError, httpx.RequestError, ValueError) as e:
+                if success:
+                    logger.error("Erro no meio do streaming com o modelo %s: %s", model, e)
+                    raise e
+                
+                if isinstance(e, httpx.HTTPStatusError) and e.response.status_code == 429:
+                    if attempt < max_retries - 1:
+                        sleep_time = backoff_factor * (2 ** attempt) + random.uniform(0.1, 0.5)
+                        logger.warning(
+                            "Capturado HTTPStatusError 429 STREAM para %s. Nova tentativa em %.2fs... (%d/%d)",
+                            model, sleep_time, attempt + 1, max_retries
+                        )
+                        await asyncio.sleep(sleep_time)
+                        continue
+                
+                logger.warning("Falha na tentativa %d para o modelo STREAM %s: %s", attempt + 1, model, e)
+                last_exception = e
+                break  # Tenta o próximo modelo
+                
+    raise ValueError(f"Todos os modelos da API do OpenRouter em STREAM falharam. Ultimo erro: {last_exception}")
+
 
 
 async def generate_problem_stream(
@@ -399,15 +448,18 @@ async def generate_problem_stream(
             # O ideal seria usar o aiter_lines() do stream do gemini
             logger.warning("Streaming ainda nao totalmente implementado para gemini direto. Retornando em bloco.")
             resp = await _call_gemini_api(messages, api_key=gemini_api_key, temperature=0.8)
-            # Simula o stream do openrouter
-            import json
-            payload = json.dumps({"choices": [{"delta": {"content": resp}}]})
-            yield f"data: {payload}\n\n"
         else:
-            async for chunk in _call_llm_stream(messages, temperature=0.8):
-                yield chunk
+            logger.info("Retornando em bloco para OpenRouter para garantir robustez e validacao de JSON.")
+            resp = await _call_llm(messages, temperature=0.8)
+            
+        # Limpa e valida o JSON gerado no backend antes de empacotar
+        problem_data = _parse_problem_json(resp)
+        clean_resp = json.dumps(problem_data)
+        
+        # Simula o stream do openrouter com o JSON 100% limpo
+        payload = json.dumps({"choices": [{"delta": {"content": clean_resp}}]})
+        yield f"data: {payload}\n\n"
     except Exception as e:
         logger.exception("Erro durante o streaming da LLM.")
-        import json
         payload = json.dumps({"error": f"Erro interno de streaming da LLM: {str(e)}"})
         yield f"data: {payload}\n\n"

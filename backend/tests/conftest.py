@@ -63,12 +63,13 @@ def setup_firebase():
                                 refresh_token=refresh_token,
                                 token_uri="https://oauth2.googleapis.com/token",
                                 client_id=client_id,
-                            )
+                             )
                             try:
                                 creds.refresh(Request())
                                 print("\n[conftest] Token do Firebase de firebase-tools.json renovado.")
                             except Exception as refresh_err:
-                                print(f"\n[conftest] Nao foi possivel renovar o token: {refresh_err}")
+                                print(f"\n[conftest] Nao foi possivel renovar o token: {refresh_err}. Usando access_token atual diretamente.")
+                                creds = Credentials(token=access_token)
                             
                             firebase_admin.initialize_app(credential=creds, options={
                                 'projectId': 'pygames-apc'
@@ -81,6 +82,12 @@ def setup_firebase():
                         print("\n[conftest] firebase-tools.json nao encontrado. Inicializando padrao...")
                         firebase_admin.initialize_app()
 
+    # Valida se a conexao real do Firebase Firestore está ativa e funcional
+    from app.services import firebase_service
+    db = firebase_service.get_db()
+    if db is None or firebase_service._use_local_fallback:
+        pytest.exit("Falha critica: O Firebase Firestore real nao pode ser inicializado para os testes de integracao.")
+
 
 @pytest.fixture(autouse=True)
 def reset_firebase_service_state():
@@ -91,8 +98,10 @@ def reset_firebase_service_state():
     firebase_service._in_memory_submissions.clear()
     firebase_service._in_memory_db.clear()
     yield
+    assert not firebase_service._use_local_fallback, "A conexao real com o Firebase Firestore falhou ou ativou fallback local durante a execucao do teste!"
     firebase_service._use_local_fallback = False
     firebase_service._in_memory_users.clear()
     firebase_service._in_memory_submissions.clear()
     firebase_service._in_memory_db.clear()
+
 

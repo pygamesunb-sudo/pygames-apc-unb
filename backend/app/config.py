@@ -38,14 +38,39 @@ class Settings(BaseSettings):
                             # Tenta usar as credenciais padrão do GCP/Firebase (produção)
                             firebase_admin.initialize_app()
                         except Exception:
-                            # Fallback local sem credenciais
-                            import google.auth.credentials
-                            firebase_admin.initialize_app(
-                                credential=google.auth.credentials.AnonymousCredentials(),
-                                options={
-                                    'projectId': self.firebase_project_id
-                                }
-                            )
+                            # Tenta carregar do token de acesso local do firebase-tools.json (desenvolvimento local)
+                            user_profile = os.environ.get("USERPROFILE") or os.path.expanduser("~")
+                            firebase_tools_path = os.path.join(user_profile, ".config", "configstore", "firebase-tools.json")
+                            initialized = False
+                            
+                            if os.path.exists(firebase_tools_path):
+                                try:
+                                    import json
+                                    with open(firebase_tools_path, "r", encoding="utf-8") as f:
+                                        data = json.load(f)
+                                    tokens = data.get("tokens", {})
+                                    access_token = tokens.get("access_token")
+                                    if access_token:
+                                        from google.oauth2.credentials import Credentials as GoogleCredentials
+                                        creds = GoogleCredentials(access_token)
+                                        firebase_admin.initialize_app(
+                                            credential=creds,
+                                            options={'projectId': self.firebase_project_id}
+                                        )
+                                        initialized = True
+                                        print("[Config] Firebase Admin SDK inicializado via token local do firebase-tools.json.")
+                                except Exception as tools_err:
+                                    print(f"[Config] Falha ao inicializar via firebase-tools.json: {tools_err}")
+                                    
+                            if not initialized:
+                                # Fallback local sem credenciais (Anonymous)
+                                import google.auth.credentials
+                                firebase_admin.initialize_app(
+                                    credential=google.auth.credentials.AnonymousCredentials(),
+                                    options={
+                                        'projectId': self.firebase_project_id
+                                    }
+                                )
                 except Exception as e:
                     print(f"[Config] Nao foi possivel inicializar o Firebase Admin SDK: {e}")
                     return
@@ -76,3 +101,9 @@ class Settings(BaseSettings):
             print("[Config] Aviso: A busca de configuracoes no Firestore expirou (timeout de 3s). Continuando com .env local.")
 
 settings = Settings()
+
+# Evita carregar automaticamente do Firebase durante a execução de testes
+import sys
+if "pytest" not in sys.modules and "unittest" not in sys.modules and not os.environ.get("PYTEST_CURRENT_TEST"):
+    settings.load_from_firebase()
+

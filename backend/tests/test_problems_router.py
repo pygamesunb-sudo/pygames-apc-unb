@@ -12,17 +12,15 @@ client = TestClient(app)
 def clean_test_user():
     """Limpa o usuario de testes padrao do Firestore antes e apos cada teste."""
     db = firebase_service.get_db()
-    if db is not None:
-        try:
-            db.collection("users").document("test-user-uid-12345").delete()
-        except Exception:
-            pass
+    try:
+        db.collection("users").document("test-user-uid-12345").delete()
+    except Exception:
+        pass
     yield
-    if db is not None:
-        try:
-            db.collection("users").document("test-user-uid-12345").delete()
-        except Exception:
-            pass
+    try:
+        db.collection("users").document("test-user-uid-12345").delete()
+    except Exception:
+        pass
 
 def test_list_problems_endpoint():
     async def run():
@@ -47,8 +45,7 @@ def test_list_problems_endpoint():
             assert problem_data["title"] in titles
         finally:
             db = firebase_service.get_db()
-            if db is not None:
-                db.collection("problems").document(problem_id).delete()
+            db.collection("problems").document(problem_id).delete()
                 
     asyncio.run(run())
 
@@ -101,8 +98,7 @@ def test_generate_problem_deprecated_endpoint(mock_generate):
     problem_id = data.get("problem_id")
     if problem_id:
         db = firebase_service.get_db()
-        if db is not None:
-            db.collection("problems").document(problem_id).delete()
+        db.collection("problems").document(problem_id).delete()
 
 @patch("app.routers.problems.review_problem")
 def test_review_problem_endpoint(mock_review):
@@ -140,8 +136,7 @@ def test_review_problem_endpoint(mock_review):
     problem_id = data.get("problem_id")
     if problem_id:
         db = firebase_service.get_db()
-        if db is not None:
-            db.collection("problems").document(problem_id).delete()
+        db.collection("problems").document(problem_id).delete()
 
 @patch("app.routers.problems.generate_problem_stream")
 def test_generate_stream_endpoint(mock_stream):

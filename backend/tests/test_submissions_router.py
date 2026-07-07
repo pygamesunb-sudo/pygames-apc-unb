@@ -12,17 +12,15 @@ client = TestClient(app)
 def clean_test_user():
     """Limpa o usuario de testes padrao do Firestore antes e apos cada teste."""
     db = firebase_service.get_db()
-    if db is not None:
-        try:
-            db.collection("users").document("test-user-uid-12345").delete()
-        except Exception:
-            pass
+    try:
+        db.collection("users").document("test-user-uid-12345").delete()
+    except Exception:
+        pass
     yield
-    if db is not None:
-        try:
-            db.collection("users").document("test-user-uid-12345").delete()
-        except Exception:
-            pass
+    try:
+        db.collection("users").document("test-user-uid-12345").delete()
+    except Exception:
+        pass
 
 def test_submit_code_timeout():
     """Testa submissao de codigo que entra em loop infinito (Timeout)."""
@@ -37,10 +35,7 @@ def test_submit_code_timeout():
             "test_cases": [{"input": "", "expected_output": "1"}]
         }
         db = firebase_service.get_db()
-        if db is not None:
-            db.collection("problems").document(problem_id).set(problem_data)
-        else:
-            firebase_service._in_memory_db[problem_id] = problem_data
+        db.collection("problems").document(problem_id).set(problem_data)
             
         try:
             # Envia codigo que causa timeout (execucao de 5 segundos no maximo)
@@ -55,10 +50,7 @@ def test_submit_code_timeout():
             assert data["all_passed"] is False
             assert "tempo limite excedido" in data["results"][0]["error"].lower()
         finally:
-            if db is not None:
-                db.collection("problems").document(problem_id).delete()
-            else:
-                firebase_service._in_memory_db.pop(problem_id, None)
+            db.collection("problems").document(problem_id).delete()
 
     asyncio.run(run())
 
@@ -78,10 +70,7 @@ def test_submit_code_subprocess_exception(mock_run):
             "test_cases": [{"input": "", "expected_output": "1"}]
         }
         db = firebase_service.get_db()
-        if db is not None:
-            db.collection("problems").document(problem_id).set(problem_data)
-        else:
-            firebase_service._in_memory_db[problem_id] = problem_data
+        db.collection("problems").document(problem_id).set(problem_data)
             
         try:
             response = client.post(
@@ -94,10 +83,7 @@ def test_submit_code_subprocess_exception(mock_run):
             assert data["all_passed"] is False
             assert "erro simulado" in data["results"][0]["error"].lower()
         finally:
-            if db is not None:
-                db.collection("problems").document(problem_id).delete()
-            else:
-                firebase_service._in_memory_db.pop(problem_id, None)
+            db.collection("problems").document(problem_id).delete()
 
     asyncio.run(run())
 
@@ -114,10 +100,7 @@ def test_submit_code_no_test_cases():
             "test_cases": []
         }
         db = firebase_service.get_db()
-        if db is not None:
-            db.collection("problems").document(problem_id).set(problem_data)
-        else:
-            firebase_service._in_memory_db[problem_id] = problem_data
+        db.collection("problems").document(problem_id).set(problem_data)
             
         try:
             response = client.post(
@@ -128,10 +111,7 @@ def test_submit_code_no_test_cases():
             assert response.status_code == 422
             assert "nao possui casos de teste" in response.json()["detail"].lower()
         finally:
-            if db is not None:
-                db.collection("problems").document(problem_id).delete()
-            else:
-                firebase_service._in_memory_db.pop(problem_id, None)
+            db.collection("problems").document(problem_id).delete()
 
     asyncio.run(run())
 
@@ -179,11 +159,8 @@ def test_submissions_history_endpoint():
         
         # Cleanup
         db = firebase_service.get_db()
-        if db is not None:
-            subs = db.collection("submissions").where("uid", "==", test_uid).stream()
-            for s in subs:
-                db.collection("submissions").document(s.id).delete()
-        else:
-            firebase_service._in_memory_submissions.clear()
+        subs = db.collection("submissions").where("uid", "==", test_uid).stream()
+        for s in subs:
+            db.collection("submissions").document(s.id).delete()
 
     asyncio.run(run())

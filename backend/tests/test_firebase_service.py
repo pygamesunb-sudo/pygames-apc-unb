@@ -28,12 +28,11 @@ def test_save_and_get_problem():
             assert retrieved["topic"] == "Recursion"
         finally:
             db = firebase_service.get_db()
-            if db is not None:
-                for p_id in created_problems:
-                    try:
-                        db.collection("problems").document(p_id).delete()
-                    except Exception:
-                        pass
+            for p_id in created_problems:
+                try:
+                    db.collection("problems").document(p_id).delete()
+                except Exception:
+                    pass
     asyncio.run(run())
 
 
@@ -58,12 +57,11 @@ def test_list_problems():
             assert problem_data["title"] in titles
         finally:
             db = firebase_service.get_db()
-            if db is not None:
-                for p_id in created_problems:
-                    try:
-                        db.collection("problems").document(p_id).delete()
-                    except Exception:
-                        pass
+            for p_id in created_problems:
+                try:
+                    db.collection("problems").document(p_id).delete()
+                except Exception:
+                    pass
     asyncio.run(run())
 
 
@@ -95,12 +93,11 @@ def test_user_profile_crud():
             assert profile2["total_score"] == 150
         finally:
             db = firebase_service.get_db()
-            if db is not None:
-                for u_id in created_users:
-                    try:
-                        db.collection("users").document(u_id).delete()
-                    except Exception:
-                        pass
+            for u_id in created_users:
+                try:
+                    db.collection("users").document(u_id).delete()
+                except Exception:
+                    pass
     asyncio.run(run())
 
 
@@ -126,10 +123,9 @@ def test_save_submission_updates_points():
             )
             
             db = firebase_service.get_db()
-            if db is not None:
-                subs = db.collection("submissions").where("uid", "==", test_uid).stream()
-                for sub in subs:
-                    created_submissions.append(sub.id)
+            subs = db.collection("submissions").where("uid", "==", test_uid).stream()
+            for sub in subs:
+                created_submissions.append(sub.id)
                     
             assert updated_profile["coding_points"] == 50
             assert test_problem_id in updated_profile["solved_problems"]
@@ -147,22 +143,21 @@ def test_save_submission_updates_points():
             assert updated_profile2["coding_points"] == 50
         finally:
             db = firebase_service.get_db()
-            if db is not None:
-                for p_id in created_problems:
-                    try:
-                        db.collection("problems").document(p_id).delete()
-                    except Exception:
-                        pass
-                for u_id in created_users:
-                    try:
-                        db.collection("users").document(u_id).delete()
-                    except Exception:
-                        pass
-                for s_id in created_submissions:
-                    try:
-                        db.collection("submissions").document(s_id).delete()
-                    except Exception:
-                        pass
+            for p_id in created_problems:
+                try:
+                    db.collection("problems").document(p_id).delete()
+                except Exception:
+                    pass
+            for u_id in created_users:
+                try:
+                    db.collection("users").document(u_id).delete()
+                except Exception:
+                    pass
+            for s_id in created_submissions:
+                try:
+                    db.collection("submissions").document(s_id).delete()
+                except Exception:
+                    pass
     asyncio.run(run())
 
 
@@ -185,12 +180,11 @@ def test_get_leaderboard_data():
             assert test_uid in uids
         finally:
             db = firebase_service.get_db()
-            if db is not None:
-                for u_id in created_users:
-                    try:
-                        db.collection("users").document(u_id).delete()
-                    except Exception:
-                        pass
+            for u_id in created_users:
+                try:
+                    db.collection("users").document(u_id).delete()
+                except Exception:
+                    pass
     asyncio.run(run())
 
 
@@ -212,12 +206,11 @@ def test_register_solved_exercise_points():
             assert exercise_id in profile["solved_problems"]
         finally:
             db = firebase_service.get_db()
-            if db is not None:
-                for u_id in created_users:
-                    try:
-                        db.collection("users").document(u_id).delete()
-                    except Exception:
-                        pass
+            for u_id in created_users:
+                try:
+                    db.collection("users").document(u_id).delete()
+                except Exception:
+                    pass
     asyncio.run(run())
 
 
@@ -236,10 +229,9 @@ def test_check_and_update_rate_limit():
             assert res3 is False
         finally:
             db = firebase_service.get_db()
-            if db is not None:
-                for u_id in created_users:
-                    try:
-                        db.collection("users").document(u_id).delete()
-                    except Exception:
-                        pass
+            for u_id in created_users:
+                try:
+                    db.collection("users").document(u_id).delete()
+                except Exception:
+                    pass
     asyncio.run(run())
