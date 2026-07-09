@@ -1,9 +1,17 @@
+"""
+Modelos Pydantic (schemas) de request/response da API.
+
+Definem validacao automatica de entrada e documentacao OpenAPI em /docs.
+Todos os endpoints importam seus contratos daqui.
+"""
 from pydantic import BaseModel, Field
 from typing import Literal
 
-# Modelos de entrada da API para geracao de problemas.
+
+# --- Geracao de problemas ---
+
 class GenerateProblemRequest(BaseModel):
-    # Tema informado pelo usuario para contextualizar o desafio.
+    """Payload enviado pelo frontend ao solicitar um novo desafio."""
     topic: str = Field(
         ...,
         min_length=3,
@@ -11,29 +19,28 @@ class GenerateProblemRequest(BaseModel):
         description="Tema de interesse do usuario (ex: Minecraft, historias comicas).",
         examples=["Minecraft e Redstone"],
     )
-    # Nivel de complexidade esperado para o exercicio.
     difficulty: Literal["facil", "medio", "dificil", "competitivo"] = Field(
         default="facil",
         description="Nivel de dificuldade do problema.",
     )
-    # Chave opcional do Gemini enviada pelo proprio usuario.
     gemini_api_key: str | None = Field(
         default=None,
         description="Chave de API do Gemini do proprio usuario (opcional)."
     )
-    # Flag que ativa uso da chave personalizada no fluxo de LLM.
     use_custom_key: bool = Field(
         default=False,
         description="Se True, usa a chave de API fornecida pelo usuario para gerar o problema."
     )
 
-# Estrutura de cada caso de teste usado na correcao automatica.
+
 class TestCase(BaseModel):
+    """Um par entrada/saida esperada para validar a solucao."""
     input: str = Field(..., description="Entrada do caso de teste.")
     expected_output: str = Field(..., description="Saida esperada do caso de teste.")
 
-# Formato padrao retornado ao frontend para um problema gerado.
+
 class GeneratedProblem(BaseModel):
+    """Problema completo retornado ao frontend apos geracao/revisao."""
     problem_id: str = Field(..., description="ID unico do problema no Firestore.")
     title: str = Field(..., description="Titulo do problema.")
     description: str = Field(..., description="Enunciado completo do problema.")
@@ -46,13 +53,17 @@ class GeneratedProblem(BaseModel):
         description="Linhas da solucao embaralhadas para o modo de blocos.",
     )
 
-# Dados enviados quando o aluno submete seu codigo.
+
+# --- Submissao de codigo ---
+
 class SubmitCodeRequest(BaseModel):
+    """Codigo Python enviado pelo usuario para um problema especifico."""
     problem_id: str = Field(..., description="ID do problema sendo respondido.")
     code: str = Field(..., min_length=1, description="Codigo Python submetido pelo usuario.")
 
-# Resultado individual de um caso de teste executado.
+
 class TestResult(BaseModel):
+    """Resultado da execucao de um unico caso de teste."""
     test_case_index: int
     passed: bool
     input: str
@@ -60,11 +71,31 @@ class TestResult(BaseModel):
     actual_output: str
     error: str | None = None
 
-# Resposta consolidada da avaliacao de codigo.
+
 class SubmitCodeResponse(BaseModel):
+    """Resposta consolidada apos executar todos os casos de teste."""
     all_passed: bool
     results: list[TestResult]
     score: int = Field(..., description="Pontuacao de 0 a 100.")
     coding_points: int | None = Field(default=None, description="Pontos totais de programacao do usuario.")
     total_score: int | None = Field(default=None, description="Pontuacao consolidada geral do usuario.")
 
+
+# --- Validacao e revisao pos-geracao ---
+
+class ValidateProblemRequest(BaseModel):
+    """Usado pelo frontend logo apos o stream SSE terminar."""
+    solution: str = Field(..., description="Codigo da solucao para testar.")
+    test_cases: list[TestCase]
+
+
+class ValidateProblemResponse(BaseModel):
+    passed: bool
+    results: list[TestResult]
+
+
+class ReviewProblemRequest(BaseModel):
+    """Aciona o agente revisor quando a validacao automatica falha."""
+    problem_data: dict = Field(..., description="O dicionario do problema a ser revisado.")
+    gemini_api_key: str | None = None
+    use_custom_key: bool = False

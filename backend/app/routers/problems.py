@@ -1,12 +1,31 @@
+"""
+Router de problemas de programacao.
+
+Pipeline principal:
+1. POST /generate_stream — gera problema via LLM (SSE)
+2. POST /validate       — executa solucao nos testes localmente
+3. POST /review         — agente revisor corrige problemas com falha
+4. GET  /               — lista problemas salvos no Firestore
+"""
 import asyncio
 import logging
 import uuid
+import random
 
 from fastapi import APIRouter, HTTPException, Depends
+from fastapi.responses import StreamingResponse
 
-from app.models.schemas import GenerateProblemRequest, GeneratedProblem, TestCase
-from app.services.llm_generator import generate_problem
-from app.services.llm_reviewer import review_problem
+from app.models.schemas import (
+    GenerateProblemRequest, 
+    GeneratedProblem, 
+    TestCase,
+    ValidateProblemRequest,
+    ValidateProblemResponse,
+    ReviewProblemRequest,
+    TestResult
+)
+from app.services.llm_generator import generate_problem, generate_problem_stream
+from app.services.llm_reviewer import review_problem, _run_solution_against_tests
 from app.services import firebase_service
 from app.dependencies import get_current_user
 
@@ -14,17 +33,141 @@ router = APIRouter(prefix="/api/problems", tags=["problems"])
 logger = logging.getLogger(__name__)
 
 
+@router.post("/generate_stream")
+async def generate_problem_stream_endpoint(body: GenerateProblemRequest, user: dict = Depends(get_current_user)):
+    """
+    Gera um novo problema de programacao via SSE (Server-Sent Events).
+    Aplica limites de cota antes de gerar.
+    """
+    # 1. Verifica limites de cota
+    uid = user.get("uid", "anonymous")
+    allowed = await firebase_service.check_and_update_rate_limit(uid=uid)
+    if not allowed:
+        raise HTTPException(
+            status_code=429, 
+            detail="Você atingiu o limite de gerações diárias/semanais. Tente novamente mais tarde."
+        )
+
+    # 2. Retorna a resposta em stream
+    return StreamingResponse(
+        generate_problem_stream(
+            topic=body.topic,
+            difficulty=body.difficulty,
+            gemini_api_key=body.gemini_api_key,
+            use_custom_key=body.use_custom_key
+        ),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no"
+        }
+    )
+
+
+@router.post("/validate", response_model=ValidateProblemResponse)
+async def validate_problem_endpoint(body: ValidateProblemRequest, user: dict = Depends(get_current_user)):
+    """
+    Roda a solucao gerada contra os casos de teste localmente.
+    A ser chamado pelo Frontend logo apos terminar o stream.
+    """
+    try:
+        # Formata para o formato esperado pelo _run_solution_against_tests
+        test_cases_dict = [
+            {"input": tc.input, "expected_output": tc.expected_output}
+            for tc in body.test_cases
+        ]
+        
+        results_dict = _run_solution_against_tests(body.solution, test_cases_dict)
+        all_passed = all(r["passed"] for r in results_dict)
+        
+        results = [
+            TestResult(
+                test_case_index=r["test_case_index"],
+                passed=r["passed"],
+                input=r["input"],
+                expected_output=r["expected_output"],
+                actual_output=r["actual_output"],
+                error=r["error"]
+            )
+            for r in results_dict
+        ]
+        
+        return ValidateProblemResponse(passed=all_passed, results=results)
+    except Exception as e:
+        logger.exception("Erro na validacao automatica da solucao.")
+        raise HTTPException(status_code=500, detail=f"Erro ao validar problema: {e}")
+
+
+@router.post("/review", response_model=GeneratedProblem)
+async def review_problem_endpoint(body: ReviewProblemRequest, user: dict = Depends(get_current_user)):
+    """
+    Aciona o agente revisor para corrigir um problema que falhou nos testes iniciais.
+    Salva no Firestore se corrigido com sucesso.
+    """
+    problem_data = body.problem_data
+    
+    try:
+        review_result = await review_problem(
+            problem_data, 
+            reviewer_index=1, 
+            gemini_api_key=body.gemini_api_key, 
+            use_custom_key=body.use_custom_key
+        )
+    except Exception as e:
+        logger.exception("Erro ao acionar revisor.")
+        raise HTTPException(status_code=502, detail=f"Erro na API de revisao: {e}")
+        
+    if not review_result.get("approved"):
+        raise HTTPException(
+            status_code=422,
+            detail=f"O revisor nao conseguiu consertar o problema. Feedback: {review_result.get('feedback')}"
+        )
+        
+    corrected = review_result.get("corrected_problem")
+    if corrected:
+        problem_data = {**problem_data, **corrected}
+        if "solution_blocks" in problem_data and problem_data["solution_blocks"]:
+            random.shuffle(problem_data["solution_blocks"])
+            
+    # Salva no Firestore
+    problem_to_save = {
+        **problem_data,
+        "reviews": [review_result]
+    }
+    
+    try:
+        problem_id = await firebase_service.save_problem(problem_to_save)
+    except Exception as e:
+        logger.warning("Nao foi possivel salvar no Firestore: %s. Usando ID temporario.", e)
+        problem_id = str(uuid.uuid4())
+
+    test_cases = [
+        TestCase(
+            input=tc.get("input", ""),
+            expected_output=tc.get("expected_output", ""),
+        )
+        for tc in problem_data.get("test_cases", [])
+    ]
+
+    return GeneratedProblem(
+        problem_id=problem_id,
+        title=problem_data.get("title", "Problema sem titulo"),
+        description=problem_data.get("description", ""),
+        difficulty=problem_data.get("difficulty", "facil"),
+        topic=problem_data.get("topic", "Tema"),
+        test_cases=test_cases,
+        hints=problem_data.get("hints", []),
+        solution_blocks=problem_data.get("solution_blocks", []),
+    )
+
+
 @router.post("/generate", response_model=GeneratedProblem, status_code=201)
 async def generate_problem_endpoint(body: GenerateProblemRequest, user: dict = Depends(get_current_user)):
     """
-    Gera um novo problema de programacao baseado no topico e dificuldade fornecidos.
-    A pipeline executa:
-    1. Agente Gerador (LLM) -> cria problema, testes e solucao.
-    2. Dois Agentes Revisores em paralelo -> validam com ferramenta Python.
-    3. Salva no Firestore se aprovado por pelo menos 1 revisor.
+    [DEPRECATED] Mantido por compatibilidade.
+    Gera um novo problema de programacao baseado no topico e dificuldade.
     """
-    # --- Etapa 1: Geracao ---
-    # Cria enunciado, casos de teste, dicas e blocos de solucao via LLM.
+    # ... mesma implementacao basica da geracao sem SSE, mantida para os testes
     try:
         problem_data = await generate_problem(
             body.topic, 
@@ -35,93 +178,22 @@ async def generate_problem_endpoint(body: GenerateProblemRequest, user: dict = D
     except Exception as e:
         logger.exception("Erro na geracao do problema.")
         raise HTTPException(status_code=502, detail=f"Erro ao gerar o problema via LLM: {e}")
-    # --- Etapa 2: Revisao sequencial (com fallback seguro em caso de erro da API) ---
-    reviews = []
-    try:
-        # Pequena pausa para reduzir chance de rate limit entre chamadas consecutivas.
-        await asyncio.sleep(1.5)
-        review1 = await review_problem(
-            problem_data, 
-            reviewer_index=1, 
-            gemini_api_key=body.gemini_api_key, 
-            use_custom_key=body.use_custom_key
-        )
-        reviews.append(review1)
         
-        await asyncio.sleep(1.5)
-        review2 = await review_problem(
-            problem_data, 
-            reviewer_index=2, 
-            gemini_api_key=body.gemini_api_key, 
-            use_custom_key=body.use_custom_key
-        )
-        reviews.append(review2)
-        
-        logger.info(
-            "Resultados da revisao: Revisor1=%s, Revisor2=%s",
-            review1.get("approved"),
-            review2.get("approved"),
-        )
-    except Exception as e:
-        logger.warning(
-            "Revisor falhou devido a erro de API (ex: rate limit 429): %s. "
-            "Ignorando revisao automatica e entregando o problema original do gerador.",
-            e
-        )
-        # Mock de revisao aprovada para permitir que o fluxo continue normalmente
-        reviews = [
-            {"approved": True, "feedback": f"Revisao pulada devido a instabilidade da API: {e}", "reviewer_index": 1},
-            {"approved": True, "feedback": f"Revisao pulada devido a instabilidade da API: {e}", "reviewer_index": 2}
-        ]
-    # --- Etapa 2.5: Correcao colaborativa ---
-    # Se algum revisor aprovou e forneceu uma solucao corrigida, adotamos ela!
-    corrected = None
-    for rev in reviews:
-        if rev.get("approved") and rev.get("corrected_problem"):
-            corrected = rev.get("corrected_problem")
-            logger.info("Adotando versao corrigida e validada pelo Revisor %d!", rev.get("reviewer_index"))
-            break
-            
-    if corrected:
-        import random
-        problem_data = {
-            **problem_data,
-            **corrected
-        }
-        # Re-embaralha os blocos de solucao corrigidos
-        if "solution_blocks" in problem_data and problem_data["solution_blocks"]:
-            random.shuffle(problem_data["solution_blocks"])
-
-    # Rejeita apenas quando nenhum revisor aprovou o problema.
-    approvals = [r.get("approved", False) for r in reviews]
-    if not any(approvals):
-        feedback = reviews[0].get("feedback", "Problema rejeitado pelos revisores.")
-        raise HTTPException(
-            status_code=422,
-            detail=f"O problema gerado nao passou na revisao: {feedback}",
-        )
-
     # --- Etapa 3: Persistencia no Firestore ---
-    # Guarda tambem metadados de revisao para auditoria posterior.
     problem_to_save = {
         **problem_data,
         "topic": body.topic,
         "difficulty": body.difficulty,
-        "reviews": reviews,
+        "reviews": [],
     }
     try:
         problem_id = await firebase_service.save_problem(problem_to_save)
     except Exception as e:
-        logger.warning("Nao foi possivel salvar no Firestore: %s. Usando ID temporario.", e)
+        logger.warning("Nao foi possivel salvar no Firestore: %s.", e)
         problem_id = str(uuid.uuid4())
 
-    # --- Monta a resposta ---
-    # Converte dicionarios em modelos tipados da API.
     test_cases = [
-        TestCase(
-            input=tc.get("input", ""),
-            expected_output=tc.get("expected_output", ""),
-        )
+        TestCase(input=tc.get("input", ""), expected_output=tc.get("expected_output", ""))
         for tc in problem_data.get("test_cases", [])
     ]
 
@@ -143,7 +215,6 @@ async def list_problems_endpoint(user: dict = Depends(get_current_user)):
     Retorna uma lista com todos os problemas gerados e salvos.
     """
     try:
-        # Lista todos os problemas ja gerados para exibir no frontend.
         raw_problems = await firebase_service.list_problems()
         formatted_problems = []
         for p in raw_problems:

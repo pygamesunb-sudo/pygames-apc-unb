@@ -1,3 +1,11 @@
+"""
+Agente Revisor (LLM) — valida e corrige problemas gerados.
+
+Fluxo:
+1. Executa a solucao proposta contra os casos de teste (subprocesso Python)
+2. Envia resultados + problema para a LLM revisor
+3. Retorna problema corrigido ou feedback de rejeicao
+"""
 import subprocess
 import sys
 import tempfile
@@ -10,7 +18,6 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-# Endpoint unico para revisao via OpenRouter.
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 REVIEWER_SYSTEM_PROMPT = """Você é um revisor e corretor especialista de desafios de programação em Python.
@@ -23,6 +30,11 @@ Se a solução falhar nos testes (campo 'all_tests_passed' for False) ou se voc�
 2. Defina "approved": true no retorno, pois você mesmo já consertou e validou o problema.
 3. Preencha o dicionário 'corrected_problem' com todos os campos corrigidos.
 
+Regras Cruciais de UX e Interface (IMPORTANTE):
+- **Ocultar Palavras-chave na Descrição**: O frontend exibe automaticamente os exemplos em uma tabela bonita se a "description" NÃO contiver as palavras "Exemplo", "Entrada" ou "Saída".
+- Portanto, se a descrição atual contiver essas palavras ou exemplos textuais manuais, VOCÊ DEVE CORRIGIR A DESCRIÇÃO REMOVENDO-OS (deixando os exemplos apenas no array 'test_cases').
+- Use negrito (`**variavel**`) na descrição para destacar partes importantes. Não utilize marcações complexas.
+
 Sempre responda em formato JSON válido com a seguinte estrutura exata:
 {
   "approved": true ou false (true se o problema estiver correto ou se você o corrigiu com sucesso),
@@ -30,17 +42,17 @@ Sempre responda em formato JSON válido com a seguinte estrutura exata:
   "suggested_improvements": ["melhoria 1"],
   "corrected_problem": {
     "title": "Título (corrigido se necessário, ou mantido)",
-    "description": "Enunciado (corrigido se necessário, ou mantido)",
+    "description": "Enunciado (corrigido se necessário, ou mantido sem tabelas complexas de markdown)",
     "test_cases": [
       {"input": "entrada", "expected_output": "saída"}
     ],
-    "solution": "código Python que resolve o problema (corrigido e testado)",
+    "solution": "código Python completo que resolve o problema rodando em standalone com I/O padrão (Lendo de stdin via sys.stdin.read() e printando no stdout; inclua obrigatoriamente bloco if __name__ == '__main__': no final se for baseado em funções)",
     "hints": ["dicas"],
-    "solution_blocks": ["linhas individuais da solução"]
+    "solution_blocks": ["blocos da solução com identação preservada (agrupados logicamente em multilinha para ter entre 6 e 12 elementos no total; sem blocos vazios ou duplicados)"]
   }
 }
 
-Se o problema original já estiver 100% perfeito e todos os testes passaram de primeira, defina "corrected_problem": null (mas defina "approved": true)."""
+Se o problema original já estiver 100% perfeito (testes passando e regras de UX da descrição totalmente respeitadas), defina "corrected_problem": null (mas defina "approved": true)."""
 
 
 def _run_solution_against_tests(solution_code: str, test_cases: list[dict]) -> list[dict]:
@@ -51,11 +63,9 @@ def _run_solution_against_tests(solution_code: str, test_cases: list[dict]) -> l
     AVISO DE SEGURANCA: Esta implementacao e para desenvolvimento local/MVP.
     Em producao, use um ambiente Docker ou sandbox dedicado.
     """
-    # Acumula resultado detalhado de cada caso de teste executado.
     results = []
 
     for i, tc in enumerate(test_cases):
-        # Wrapper injeta stdin e executa o codigo em ambiente controlado.
         wrapper_code = f"""
 import sys
 import io
@@ -92,7 +102,6 @@ except Exception as e:
                 tmp.write(wrapper_code)
                 tmp_path = tmp.name
 
-            # Cada teste roda em processo isolado para reduzir efeitos colaterais.
             proc = subprocess.run(
                 [sys.executable, tmp_path],
                 input=tc["input"],
@@ -145,7 +154,6 @@ except Exception as e:
 
 async def _call_reviewer_gemini_api(messages: list[dict], api_key: str) -> dict:
     """Chama a API do Gemini oficial direta e parseia o JSON com fallback robusto."""
-    # Traduz mensagens internas para o schema esperado pela API do Gemini.
     system_instruction = ""
     contents = []
     
@@ -207,7 +215,6 @@ async def _call_reviewer_llm(messages: list[dict]) -> dict:
     """Chama a LLM do revisor e parseia a resposta JSON com fallback robusto."""
     import asyncio
     import random
-    # Identificacao da aplicacao para telemetria/controle no provedor.
     headers = {
         "Authorization": f"Bearer {settings.openrouter_api_key}",
         "Content-Type": "application/json",
@@ -215,13 +222,11 @@ async def _call_reviewer_llm(messages: list[dict]) -> dict:
         "X-Title": "Pygame-APC",
     }
     
-    # Ordem de tentativa: modelo configurado + fallback gratuitos.
     models_to_try = [settings.openrouter_model]
     if settings.openrouter_model != "openrouter/free":
         models_to_try.append("openrouter/free")
         
     fallback_list = [
-        "openai/gpt-oss-120b:free",
         "nvidia/nemotron-3-super-120b-a12b:free",
         "meta-llama/llama-3.3-70b-instruct:free",
         "meta-llama/llama-3.2-3b-instruct:free"
@@ -237,7 +242,7 @@ async def _call_reviewer_llm(messages: list[dict]) -> dict:
         payload = {
             "model": model,
             "messages": messages,
-            "temperature": 0.3,
+            "temperature": 0.8,
         }
         
         max_retries = 3
@@ -334,7 +339,6 @@ async def review_problem(
         use_custom_key
     )
 
-    # Primeiro valida tecnicamente a solucao antes de pedir opiniao da LLM.
     test_results = _run_solution_against_tests(
         problem_data.get("solution", ""), problem_data.get("test_cases", [])
     )
@@ -347,7 +351,6 @@ async def review_problem(
         len(test_results),
     )
 
-    # Contexto completo enviado ao revisor para justificativa/correcao.
     context = {
         "problem_title": problem_data.get("title"),
         "problem_description": problem_data.get("description"),
