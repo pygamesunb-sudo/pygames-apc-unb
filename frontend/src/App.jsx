@@ -18,13 +18,13 @@ import MiniGame from './components/MiniGame';
 import Leaderboard from './components/Leaderboard';
 import SubmissionHistory from './components/SubmissionHistory';
 import ApiDocs from './pages/ApiDocs';
-import LoginCard from './components/LoginCard';
+import LandingPage from './components/LandingPage';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 
 import { generateProblemStream, validateProblem, reviewProblem, submitCode, getUserProfile } from './services/api';
 import { parsePartialJson } from './utils/partialJsonParser';
-import { auth, loginWithGoogle, logout } from './services/firebase';
+import { auth, logout } from './services/firebase';
 import './App.css';
 
 const VIEW = { 
@@ -56,18 +56,22 @@ export default function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [validationStatus, setValidationStatus] = useState(''); // '', 'validating', 'reviewing', 'validated'
   const [phase, setPhase] = useState('');
+  const [currentUser, setCurrentUser] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
 
-  // Sincroniza o estado de visualização do React com a URL Hash (histórico de navegação)
+  // Sincroniza hash da URL somente quando o usuario estiver logado
   useEffect(() => {
+    if (!currentUser) return;
     if (window.location.hash !== `#${view}`) {
       window.location.hash = view;
     }
-    // Rola para o topo da pagina sempre que a view mudar
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [view]);
+  }, [view, currentUser]);
 
   // Escuta o evento hashchange do navegador para suportar botões de Voltar / Avançar
   useEffect(() => {
+    if (!currentUser) return;
+
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '');
       if (Object.values(VIEW).includes(hash)) {
@@ -82,12 +86,7 @@ export default function App() {
 
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [problem]);
-
-  // Estados de Autenticacao
-  const [currentUser, setCurrentUser] = useState(null);
-  const [userProfile, setUserProfile] = useState(null);
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  }, [problem, currentUser]);
 
   // ETA dinamico e preciso
   const [eta, setEta] = useState(180);
@@ -100,43 +99,55 @@ export default function App() {
     }
   }, [isProblemReady, view]);
 
-  // Monitora estado de login
+  // Monitora estado de login — nao bloqueia a UI com spinner
   useEffect(() => {
-    if (!auth) {
-      setIsAuthLoading(false);
-      return;
-    }
+    if (!auth) return;
 
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+    let active = true;
+
+    const applyUser = (user) => {
+      if (!active) return;
       setCurrentUser(user);
+
       if (user) {
-        try {
-          const profile = await getUserProfile();
-          setUserProfile(profile);
-          // Sincroniza API Key e ativacao do Gemini do Firestore com o localStorage
-          if (profile.gemini_api_key !== undefined) {
-            if (profile.gemini_api_key) {
-              localStorage.setItem('gemini_api_key', profile.gemini_api_key);
-            } else {
-              localStorage.removeItem('gemini_api_key');
-            }
-          }
-          if (profile.use_custom_key !== undefined) {
-            localStorage.setItem('use_custom_key', profile.use_custom_key ? 'true' : 'false');
-          }
-        } catch (err) {
-          console.error("Falha ao carregar perfil do usuario logado:", err);
+        if (!window.location.hash) {
+          window.location.hash = VIEW.HOME;
         }
+        getUserProfile()
+          .then((profile) => {
+            if (!active) return;
+            setUserProfile(profile);
+            if (profile.gemini_api_key !== undefined) {
+              if (profile.gemini_api_key) {
+                localStorage.setItem('gemini_api_key', profile.gemini_api_key);
+              } else {
+                localStorage.removeItem('gemini_api_key');
+              }
+            }
+            if (profile.use_custom_key !== undefined) {
+              localStorage.setItem('use_custom_key', profile.use_custom_key ? 'true' : 'false');
+            }
+          })
+          .catch((err) => {
+            console.error('Falha ao carregar perfil do usuario logado:', err);
+          });
       } else {
         setUserProfile(null);
-        // Limpa chaves locais ao deslogar
         localStorage.removeItem('gemini_api_key');
         localStorage.removeItem('use_custom_key');
       }
-      setIsAuthLoading(false);
-    });
+    };
 
-    return () => unsubscribe();
+    const unsubscribe = auth.onAuthStateChanged(applyUser);
+
+    if (typeof auth.authStateReady === 'function') {
+      auth.authStateReady().then(() => applyUser(auth.currentUser));
+    }
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, []);
 
   // Timer do ETA
@@ -273,29 +284,12 @@ export default function App() {
     setView(VIEW.EXERCISE);
   };
 
-  // Render do Carregamento Inicial
-  if (isAuthLoading) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#090d16', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div className="spinner" style={{ width: 40, height: 40, borderColor: '#6366f1' }} />
-      </div>
-    );
-  }
-
-  // Render da Tela de Login Obrigatório
+  // Render da Landing Page (login obrigatório)
   if (!currentUser) {
     return (
-      <LoginCard 
+      <LandingPage
         error={error}
         setError={setError}
-        onLogin={async () => {
-          setError(null);
-          try {
-            await loginWithGoogle();
-          } catch (e) {
-            setError(e.message || "Falha ao autenticar com o Google.");
-          }
-        }}
       />
     );
   }

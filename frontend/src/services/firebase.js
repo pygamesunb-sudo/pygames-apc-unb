@@ -1,7 +1,17 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
+  signOut,
+} from 'firebase/auth';
 
-// Carrega as configuracoes das chaves do Firebase do .env
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "",
@@ -11,7 +21,6 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID || ""
 };
 
-// Verifica se as chaves minimas foram preenchidas para nao quebrar a inicializacao
 const isConfigured = firebaseConfig.apiKey && firebaseConfig.projectId;
 
 if (!isConfigured) {
@@ -23,21 +32,87 @@ if (!isConfigured) {
 
 const app = isConfigured ? initializeApp(firebaseConfig) : null;
 export const auth = app ? getAuth(app) : null;
-export const googleProvider = new GoogleAuthProvider();
 
-/**
- * Efetua login via pop-up do Google.
- */
-export async function loginWithGoogle() {
-  if (!auth) {
-    throw new Error("O Firebase nao foi configurado corretamente no frontend. Verifique seu arquivo .env.");
-  }
-  return signInWithPopup(auth, googleProvider);
+function createGoogleProvider() {
+  const provider = new GoogleAuthProvider();
+  provider.addScope('email');
+  provider.addScope('profile');
+  // Sempre exibe o seletor de contas Google (não loga direto na última conta)
+  provider.setCustomParameters({ prompt: 'select_account' });
+  return provider;
 }
 
-/**
- * Efetua logout da aplicacao.
- */
+export const googleProvider = createGoogleProvider();
+
+const AUTH_ERRORS = {
+  'auth/invalid-email': 'E-mail inválido.',
+  'auth/user-not-found': 'Usuário não encontrado.',
+  'auth/wrong-password': 'Senha incorreta.',
+  'auth/invalid-credential': 'E-mail ou senha incorretos.',
+  'auth/email-already-in-use': 'Este e-mail já está cadastrado.',
+  'auth/weak-password': 'A senha deve ter pelo menos 6 caracteres.',
+  'auth/operation-not-allowed': 'Login por e-mail não está habilitado no Firebase Console.',
+  'auth/too-many-requests': 'Muitas tentativas. Aguarde um momento e tente novamente.',
+  'auth/popup-closed-by-user': 'Login cancelado.',
+  'auth/network-request-failed': 'Erro de conexão. Verifique sua internet.',
+};
+
+function mapAuthError(error) {
+  const code = error?.code || '';
+  return AUTH_ERRORS[code] || error?.message || 'Falha na autenticação.';
+}
+
+function ensureAuth() {
+  if (!auth) {
+    throw new Error("O Firebase não foi configurado. Verifique o arquivo frontend/.env.");
+  }
+  return auth;
+}
+
+async function applyPersistence(rememberMe = true) {
+  const instance = ensureAuth();
+  await setPersistence(
+    instance,
+    rememberMe ? browserLocalPersistence : browserSessionPersistence
+  );
+}
+
+export async function loginWithGoogle(rememberMe = true) {
+  await applyPersistence(rememberMe);
+  const provider = createGoogleProvider();
+  try {
+    return await signInWithPopup(ensureAuth(), provider);
+  } catch (error) {
+    throw new Error(mapAuthError(error));
+  }
+}
+
+export async function loginWithEmail(email, password, rememberMe = true) {
+  await applyPersistence(rememberMe);
+  try {
+    return await signInWithEmailAndPassword(ensureAuth(), email.trim(), password);
+  } catch (error) {
+    throw new Error(mapAuthError(error));
+  }
+}
+
+export async function registerWithEmail(email, password, rememberMe = true) {
+  await applyPersistence(rememberMe);
+  try {
+    return await createUserWithEmailAndPassword(ensureAuth(), email.trim(), password);
+  } catch (error) {
+    throw new Error(mapAuthError(error));
+  }
+}
+
+export async function resetPassword(email) {
+  try {
+    await sendPasswordResetEmail(ensureAuth(), email.trim());
+  } catch (error) {
+    throw new Error(mapAuthError(error));
+  }
+}
+
 export async function logout() {
   if (!auth) return;
   return signOut(auth);

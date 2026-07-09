@@ -12,13 +12,17 @@ const api = axios.create({
 // Interceptor para anexar o token Firebase Bearer dinamicamente em cada requisição
 api.interceptors.request.use(
   async (config) => {
-    if (auth && auth.currentUser) {
+    if (auth?.currentUser) {
       try {
-        // Obtém o token de identificação (atualiza automaticamente se estiver expirado)
-        const token = await auth.currentUser.getIdToken();
+        const token = await Promise.race([
+          auth.currentUser.getIdToken(),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Timeout ao obter token Firebase')), 8000)
+          ),
+        ]);
         config.headers['Authorization'] = `Bearer ${token}`;
       } catch (error) {
-        console.error("Erro ao anexar Firebase ID Token:", error);
+        console.error('Erro ao anexar Firebase ID Token:', error);
       }
     }
     return config;
@@ -172,7 +176,7 @@ export async function listProblems() {
  * Obtém o perfil do usuário logado contendo pontos de programação e recordes de jogos.
  */
 export async function getUserProfile() {
-  const response = await api.get('/api/users/profile');
+  const response = await api.get('/api/users/profile', { timeout: 10000 });
   return response.data;
 }
 
