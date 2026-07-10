@@ -80,6 +80,11 @@ export async function generateProblemStream(topic, difficulty, onChunk) {
   });
 
   if (!response.ok) {
+    if (response.status === 404) {
+      const err = new Error("Streaming endpoint not found");
+      err.status = 404;
+      throw err;
+    }
     let errorDetail = "Erro ao conectar ao streaming.";
     try {
       const errorData = await response.json();

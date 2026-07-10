@@ -22,7 +22,7 @@ import LandingPage from './components/LandingPage';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 
-import { generateProblemStream, validateProblem, reviewProblem, submitCode, getUserProfile } from './services/api';
+import { generateProblemStream, generateProblem, validateProblem, reviewProblem, submitCode, getUserProfile } from './services/api';
 import { parsePartialJson } from './utils/partialJsonParser';
 import { auth, logout } from './services/firebase';
 import './App.css';
@@ -194,20 +194,31 @@ export default function App() {
     setView(VIEW.EXERCISE);
 
     let rawJson = "";
+    let completeProblem = null;
+    let fallbackUsed = false;
 
     try {
-      await generateProblemStream(topic, difficulty, (chunk) => {
-        rawJson += chunk;
-        const partialData = parsePartialJson(rawJson);
-        console.log("App.jsx onChunk callback: partial description length =", partialData?.description?.length, "title =", partialData?.title);
-        setProblem(prev => ({ ...prev, ...partialData, difficulty, topic }));
-      });
-      
-      let completeProblem;
       try {
-        completeProblem = JSON.parse(rawJson);
-      } catch (e) {
-        completeProblem = parsePartialJson(rawJson);
+        await generateProblemStream(topic, difficulty, (chunk) => {
+          rawJson += chunk;
+          const partialData = parsePartialJson(rawJson);
+          console.log("App.jsx onChunk callback: partial description length =", partialData?.description?.length, "title =", partialData?.title);
+          setProblem(prev => ({ ...prev, ...partialData, difficulty, topic }));
+        });
+        
+        try {
+          completeProblem = JSON.parse(rawJson);
+        } catch (e) {
+          completeProblem = parsePartialJson(rawJson);
+        }
+      } catch (streamErr) {
+        if (streamErr.status === 404) {
+          console.warn("Streaming endpoint not found, falling back to traditional generation...");
+          fallbackUsed = true;
+          completeProblem = await generateProblem(topic, difficulty);
+        } else {
+          throw streamErr;
+        }
       }
 
       if (!completeProblem || !completeProblem.title || !completeProblem.description) {
@@ -216,19 +227,25 @@ export default function App() {
 
       setProblem({ ...completeProblem, difficulty, topic });
 
-      // Inicia a validacao local pos-streaming
-      setValidationStatus('validating');
-      const valResponse = await validateProblem(completeProblem.solution || "", completeProblem.test_cases || []);
-      
-      if (valResponse.passed) {
+      if (fallbackUsed) {
+        // No backend antigo/tradicional, a validação e persistência são feitas inteiramente no servidor.
         setValidationStatus('validated');
         setIsProblemReady(true);
       } else {
-        setValidationStatus('reviewing');
-        const reviewedProblem = await reviewProblem(completeProblem);
-        setProblem(reviewedProblem);
-        setValidationStatus('validated');
-        setIsProblemReady(true);
+        // Inicia a validacao local pos-streaming (backend com streaming e microsserviços de validação)
+        setValidationStatus('validating');
+        const valResponse = await validateProblem(completeProblem.solution || "", completeProblem.test_cases || []);
+        
+        if (valResponse.passed) {
+          setValidationStatus('validated');
+          setIsProblemReady(true);
+        } else {
+          setValidationStatus('reviewing');
+          const reviewedProblem = await reviewProblem(completeProblem);
+          setProblem(reviewedProblem);
+          setValidationStatus('validated');
+          setIsProblemReady(true);
+        }
       }
 
     } catch (err) {
