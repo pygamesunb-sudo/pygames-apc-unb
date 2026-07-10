@@ -22,11 +22,6 @@ Se a solução falhar nos testes (campo 'all_tests_passed' for False) ou se voc�
 2. Defina "approved": true no retorno, pois você mesmo já consertou e validou o problema.
 3. Preencha o dicionário 'corrected_problem' com todos os campos corrigidos.
 
-Regras Cruciais de UX e Interface (IMPORTANTE):
-- **Ocultar Palavras-chave na Descrição**: O frontend exibe automaticamente os exemplos em uma tabela bonita se a "description" NÃO contiver as palavras "Exemplo", "Entrada" ou "Saída".
-- Portanto, se a descrição atual contiver essas palavras ou exemplos textuais manuais, VOCÊ DEVE CORRIGIR A DESCRIÇÃO REMOVENDO-OS (deixando os exemplos apenas no array 'test_cases').
-- Use negrito (`**variavel**`) na descrição para destacar partes importantes. Não utilize marcações complexas.
-
 Sempre responda em formato JSON válido com a seguinte estrutura exata:
 {
   "approved": true ou false (true se o problema estiver correto ou se você o corrigiu com sucesso),
@@ -44,7 +39,7 @@ Sempre responda em formato JSON válido com a seguinte estrutura exata:
   }
 }
 
-Se o problema original já estiver 100% perfeito (testes passando e regras de UX da descrição totalmente respeitadas), defina "corrected_problem": null (mas defina "approved": true)."""
+Se o problema original já estiver 100% perfeito e todos os testes passaram de primeira, defina "corrected_problem": null (mas defina "approved": true)."""
 
 
 def _run_solution_against_tests(solution_code: str, test_cases: list[dict]) -> list[dict]:
@@ -219,6 +214,7 @@ async def _call_reviewer_llm(messages: list[dict]) -> dict:
         models_to_try.append("openrouter/free")
         
     fallback_list = [
+        "openai/gpt-oss-120b:free",
         "nvidia/nemotron-3-super-120b-a12b:free",
         "meta-llama/llama-3.3-70b-instruct:free",
         "meta-llama/llama-3.2-3b-instruct:free"
@@ -234,7 +230,7 @@ async def _call_reviewer_llm(messages: list[dict]) -> dict:
         payload = {
             "model": model,
             "messages": messages,
-            "temperature": 0.8,
+            "temperature": 0.3,
         }
         
         max_retries = 3

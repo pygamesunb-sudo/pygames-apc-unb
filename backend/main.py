@@ -16,59 +16,23 @@ logger = logging.getLogger(__name__)
 async def run_asgi(asgi_app, req: https_fn.Request) -> https_fn.Response:
     # Build the ASGI scope from the Werkzeug/Firebase Request
     headers = []
-    # If headers is a Mock (in unit tests), avoid crashing
-    req_headers = req.headers if hasattr(req, 'headers') and 'MagicMock' not in str(type(req.headers)) else {}
-    for key, value in req_headers.items():
+    for key, value in req.headers.items():
         headers.append((key.lower().encode('latin-1'), value.encode('latin-1')))
         
-    path = '/'
-    if hasattr(req, 'path') and isinstance(req.path, str) and 'MagicMock' not in str(type(req.path)):
-        path = req.path
-    elif hasattr(req, 'environ') and isinstance(req.environ, dict):
-        path = req.environ.get('PATH_INFO', '/')
-
-    method = 'GET'
-    if hasattr(req, 'method') and isinstance(req.method, str) and 'MagicMock' not in str(type(req.method)):
-        method = req.method
-    elif hasattr(req, 'environ') and isinstance(req.environ, dict):
-        method = req.environ.get('REQUEST_METHOD', 'GET')
-
-    query_string = b''
-    if hasattr(req, 'query_string') and isinstance(req.query_string, bytes) and 'MagicMock' not in str(type(req.query_string)):
-        query_string = req.query_string
-    elif hasattr(req, 'environ') and isinstance(req.environ, dict):
-        qs = req.environ.get('QUERY_STRING', '')
-        query_string = qs.encode('utf-8') if isinstance(qs, str) else qs
-
-    req_host = 'localhost'
-    if hasattr(req, 'host') and isinstance(req.host, str) and 'MagicMock' not in str(type(req.host)):
-        req_host = req.host
-    elif hasattr(req, 'environ') and isinstance(req.environ, dict):
-        req_host = req.environ.get('SERVER_NAME', 'localhost')
-
-    req_remote_addr = '127.0.0.1'
-    if hasattr(req, 'remote_addr') and isinstance(req.remote_addr, str) and 'MagicMock' not in str(type(req.remote_addr)):
-        req_remote_addr = req.remote_addr
-    elif hasattr(req, 'environ') and isinstance(req.environ, dict):
-        req_remote_addr = req.environ.get('REMOTE_ADDR', '127.0.0.1')
-
     scope = {
         'type': 'http',
         'asgi': {'version': '3.0', 'spec_version': '2.0'},
         'http_version': '1.1',
-        'method': method,
-        'path': path,
-        'raw_path': path.encode('utf-8'),
-        'query_string': query_string,
+        'method': req.method,
+        'path': req.path,
+        'raw_path': req.path.encode('utf-8'),
+        'query_string': req.query_string,
         'headers': headers,
-        'server': (req_host, 80),
-        'client': (req_remote_addr, 0),
+        'server': (req.host or 'localhost', 80),
+        'client': (req.remote_addr or '127.0.0.1', 0),
     }
 
-    # In tests, get_data() might be a Mock. If so, return empty bytes
-    body = req.get_data() if hasattr(req, 'get_data') else b''
-    if 'MagicMock' in str(type(body)):
-        body = b''
+    body = req.get_data()
     body_received = False
 
     async def receive():

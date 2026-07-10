@@ -64,19 +64,3 @@ class SubmitCodeResponse(BaseModel):
     coding_points: int | None = Field(default=None, description="Pontos totais de programacao do usuario.")
     total_score: int | None = Field(default=None, description="Pontuacao consolidada geral do usuario.")
 
-
-class ValidateProblemRequest(BaseModel):
-    solution: str = Field(..., description="Codigo da solucao para testar.")
-    test_cases: list[TestCase]
-
-
-class ValidateProblemResponse(BaseModel):
-    passed: bool
-    results: list[TestResult]
-
-
-class ReviewProblemRequest(BaseModel):
-    problem_data: dict = Field(..., description="O dicionario do problema a ser revisado.")
-    gemini_api_key: str | None = None
-    use_custom_key: bool = False
-

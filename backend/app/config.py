@@ -5,8 +5,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ENV_PATH = os.path.join(BASE_DIR, ".env")
 
-_firebase_loaded = False
-
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=ENV_PATH, env_file_encoding="utf-8")
 
@@ -23,91 +21,24 @@ class Settings(BaseSettings):
         Carrega configuracoes do .env direto do Firebase Firestore para permitir
         armazenamento de variaveis confidenciais na nuvem de forma segura.
         """
-        global _firebase_loaded
-        if _firebase_loaded:
-            return
-        _firebase_loaded = True
         import threading
 
         def run_load():
             import firebase_admin
-            from firebase_admin import credentials as fb_credentials, firestore
-            import os
-            import json
+            from firebase_admin import credentials, firestore
 
             # Verifica se o Firebase Admin SDK ja foi inicializado por este ou outro modulo
             if not firebase_admin._apps:
                 try:
                     if os.path.exists(self.fb_credentials_path):
-                        cred = fb_credentials.Certificate(self.fb_credentials_path)
+                        cred = credentials.Certificate(self.fb_credentials_path)
                         firebase_admin.initialize_app(cred)
-                        print("[Config] Firebase Admin SDK inicializado via arquivo de credenciais.")
                     else:
-                        initialized = False
-                        
-                        # 1. Tenta usar as credenciais padrão do Google (ADC)
-                        import google.auth
                         try:
-                            creds, project = google.auth.default()
-                            firebase_admin.initialize_app(credential=creds, options={'projectId': self.firebase_project_id})
-                            initialized = True
-                            print("[Config] Firebase Admin SDK inicializado com Application Default Credentials (ADC).")
-                        except Exception as adc_err:
-                            print(f"[Config] Falha no ADC: {adc_err}. Tentando gcloud CLI...")
-                            
-                        # 2. Tenta gcloud CLI para obter token do usuario logado
-                        if not initialized:
-                            try:
-                                import subprocess
-                                token = subprocess.check_output(
-                                    ["gcloud", "auth", "print-access-token"], 
-                                    text=True, 
-                                    shell=True
-                                ).strip()
-                                from google.oauth2.credentials import Credentials
-                                creds = Credentials(token=token)
-                                firebase_admin.initialize_app(credential=creds, options={'projectId': self.firebase_project_id})
-                                initialized = True
-                                print("[Config] Firebase Admin SDK inicializado via token do gcloud CLI.")
-                            except Exception as gcloud_err:
-                                print(f"[Config] Falha no gcloud CLI: {gcloud_err}. Tentando firebase-tools.json...")
-
-                        # 3. Fallback para o firebase-tools.json com suporte a refresh token
-                        if not initialized:
-                            user_profile = os.environ.get("USERPROFILE") or os.path.expanduser("~")
-                            firebase_tools_path = os.path.join(user_profile, ".config", "configstore", "firebase-tools.json")
-                            if os.path.exists(firebase_tools_path):
-                                try:
-                                    with open(firebase_tools_path, "r", encoding="utf-8") as f:
-                                        data = json.load(f)
-                                    tokens = data.get("tokens", {})
-                                    refresh_token = tokens.get("refresh_token")
-                                    access_token = tokens.get("access_token")
-                                    client_id = data.get("user", {}).get("aud")
-                                    
-                                    from google.auth.transport.requests import Request
-                                    from google.oauth2.credentials import Credentials
-                                    creds = Credentials(
-                                        token=access_token,
-                                        refresh_token=refresh_token,
-                                        token_uri="https://oauth2.googleapis.com/token",
-                                        client_id=client_id,
-                                    )
-                                    try:
-                                        creds.refresh(Request())
-                                        print("[Config] Token do Firebase de firebase-tools.json renovado.")
-                                    except Exception as refresh_err:
-                                        print(f"[Config] Nao foi possivel renovar o token: {refresh_err}. Usando access_token atual.")
-                                        creds = Credentials(token=access_token)
-                                        
-                                    firebase_admin.initialize_app(credential=creds, options={'projectId': self.firebase_project_id})
-                                    initialized = True
-                                    print("[Config] Firebase Admin SDK inicializado via token do firebase-tools.json.")
-                                except Exception as fb_tools_err:
-                                    print(f"[Config] Falha no firebase-tools.json: {fb_tools_err}")
-                                    
-                        if not initialized:
-                            # Fallback local sem credenciais (Anonymous)
+                            # Tenta usar as credenciais padrão do GCP/Firebase (produção)
+                            firebase_admin.initialize_app()
+                        except Exception:
+                            # Fallback local sem credenciais
                             import google.auth.credentials
                             firebase_admin.initialize_app(
                                 credential=google.auth.credentials.AnonymousCredentials(),
@@ -115,14 +46,13 @@ class Settings(BaseSettings):
                                     'projectId': self.firebase_project_id
                                 }
                             )
-                            print("[Config] Firebase Admin SDK inicializado em modo Anonimo (sem acesso ao Firestore real).")
                 except Exception as e:
                     print(f"[Config] Nao foi possivel inicializar o Firebase Admin SDK: {e}")
                     return
 
             try:
                 db = firestore.client()
-                doc_ref = db.collection("system_config").document("env").get(timeout=5.0)
+                doc_ref = db.collection("system_config").document("env").get(timeout=3.0)
                 if doc_ref.exists:
                     firebase_env = doc_ref.to_dict()
                     for key, value in firebase_env.items():
@@ -137,8 +67,12 @@ class Settings(BaseSettings):
             except Exception as e:
                 print(f"[Config] Aviso: Erro ao carregar configuracoes do Firestore (usando .env local): {e}")
 
-        # Executa de forma sincrona para garantir que as configuracoes estejam prontas na inicializacao
-        run_load()
+        # Executa em uma thread separada com um timeout limite para nao bloquear a inicializacao
+        t = threading.Thread(target=run_load)
+        t.daemon = True
+        t.start()
+        t.join(timeout=3.0)
+        if t.is_alive():
+            print("[Config] Aviso: A busca de configuracoes no Firestore expirou (timeout de 3s). Continuando com .env local.")
 
 settings = Settings()
-

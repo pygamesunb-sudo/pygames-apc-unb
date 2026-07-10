@@ -21,8 +21,7 @@ async def test_real_pipeline_generation_and_review():
     Nao utiliza NENHUM mock ou dado hardcoded.
     """
     # 1. Validacao previa das configuracoes
-    if not settings.openrouter_api_key:
-        pytest.skip("OPENROUTER_API_KEY nao configurada no backend/.env! Pulando teste real de LLM.")
+    assert settings.openrouter_api_key, "OPENROUTER_API_KEY nao configurada no backend/.env!"
     assert settings.openrouter_model, "OPENROUTER_MODEL nao configurado no backend/.env!"
     
     print(f"\n[INTEGRACAO REAL] Testando geracao com o modelo: {settings.openrouter_model}")
