@@ -1,5 +1,7 @@
 import React from 'react';
-import { Sparkles, Trophy, History, LogOut, BookOpen } from 'lucide-react';
+import { Sparkles, Trophy, History, LogOut, BookOpen, Code2 } from 'lucide-react';
+import './Navbar.css';
+
 
 export default function Navbar({ 
   view, 
@@ -22,8 +24,13 @@ export default function Navbar({
     <header className="navbar">
       <div className="container flex items-center justify-between">
         <button className="navbar-brand" onClick={onBack}>
-          <span className="navbar-logo">APC</span>
-          <span className="navbar-name">Pygame-APC</span>
+          <span className="landing-logo__icon">
+            <Code2 size={16} />
+          </span>
+          <span className="landing-logo__text">
+            <span className="landing-logo__python">PYTHON</span>
+            <span className="landing-logo__arcade">ARCADE</span>
+          </span>
         </button>
         
         <div className="navbar-right-side flex items-center gap-2">
@@ -35,13 +42,13 @@ export default function Navbar({
                 display: 'flex', 
                 alignItems: 'center', 
                 gap: '8px', 
-                background: 'rgba(30, 41, 59, 0.6)', 
+                background: 'rgba(8, 8, 20, 0.85)', 
                 padding: '4px 12px 4px 6px', 
                 borderRadius: '999px',
-                border: '1px solid rgba(99, 102, 241, 0.2)',
+                border: '1px solid rgba(139, 92, 246, 0.3)',
               }}
             >
-              <div style={{ width: 24, height: 24, borderRadius: '50%', overflow: 'hidden', border: '1px solid #6366f1' }}>
+              <div style={{ width: 24, height: 24, borderRadius: '50%', overflow: 'hidden', border: '1px solid #7c3aed' }}>
                 <img 
                   src={currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}`} 
                   alt={currentUser.displayName || 'Jogador'}

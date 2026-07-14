@@ -1,0 +1,24 @@
+/* ============================================================
+   EXERCISE PAGE
+   ============================================================ */
+.exercise-container {
+  max-width: 860px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.exercise-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@media (max-width: 640px) {
+  .exercise-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}

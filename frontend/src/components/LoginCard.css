@@ -1,0 +1,97 @@
+/* ============================================================
+   TELA DE LOGIN RETRO-CYBERPUNK
+   ============================================================ */
+.login-page {
+  min-height: calc(100vh - 120px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background: radial-gradient(circle at center, rgba(99, 102, 241, 0.08) 0%, rgba(9, 13, 22, 0) 70%);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 520px;
+  padding: 40px;
+  text-align: center;
+  background: rgba(10, 14, 26, 0.7);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(99, 102, 241, 0.15);
+  border-radius: var(--radius-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.login-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #6366f1, #a855f7);
+}
+
+.login-subtitle {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin-top: 10px;
+  margin-bottom: 30px;
+}
+
+.login-features {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  text-align: left;
+  margin-bottom: 32px;
+}
+
+.feature-item {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.feature-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.feature-item strong {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.feature-item p {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.google-icon {
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .login-page {
+    padding: 16px 12px !important;
+    min-height: calc(100vh - 100px);
+  }
+  
+  .login-card {
+    padding: 24px 16px !important;
+  }
+}

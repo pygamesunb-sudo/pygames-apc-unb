@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import { Code, Layers, AlignLeft } from 'lucide-react';
+import './ProblemSolver.css';
+
 
 const MODES = [
   { id: 'blocks-assembled', label: 'Blocos Montados', icon: Layers },

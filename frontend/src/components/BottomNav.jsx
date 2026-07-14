@@ -1,5 +1,7 @@
 import React from 'react';
 import { Code, Sparkles, Trophy, History, LogOut, BookOpen } from 'lucide-react';
+import './BottomNav.css';
+
 
 export default function BottomNav({ 
   view, 

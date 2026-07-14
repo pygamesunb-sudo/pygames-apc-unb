@@ -1,0 +1,195 @@
+/* ============================================================
+   SUBMISSION HISTORY & MODAL CODE VIEW
+   ============================================================ */
+.submission-timeline-card {
+  padding: 20px;
+  background: rgba(30, 41, 59, 0.4);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-left-width: 4px;
+  border-left-style: solid;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.submission-card--passed {
+  border-left-color: #10b981;
+}
+
+.submission-card--failed {
+  border-left-color: #ef4444;
+}
+
+.submission-timeline-card:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 8px rgba(99, 102, 241, 0.1);
+}
+
+.submission-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 280px;
+}
+
+.submission-user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #1e293b;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.submission-user-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.submission-user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.submission-user-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: #f8fafc;
+  font-size: 0.95rem;
+}
+
+.submission-player-name {
+  color: #f8fafc;
+}
+
+.submission-player-email {
+  font-size: 0.75rem;
+  font-weight: normal;
+  color: #64748b;
+}
+
+.submission-problem-title {
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  margin-top: 2px;
+}
+
+.submission-time-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 6px;
+}
+
+.submission-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-shrink: 0;
+}
+
+.submission-score-block {
+  text-align: right;
+}
+
+.submission-score-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-bottom: 2px;
+}
+
+.submission-score-value {
+  font-size: 1.2rem;
+  font-weight: bold;
+  font-family: monospace;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.submission-view-code-btn {
+  padding: 8px 16px;
+  font-size: 0.85rem;
+}
+
+/* Modal Submission */
+.submission-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(4, 6, 12, 0.8);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.submission-code-modal {
+  width: 100%;
+  max-width: 700px;
+  background: #090d16;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  padding: 0 !important;
+  overflow: hidden;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.submission-modal-header {
+  padding: 16px 20px;
+  background: #0c111e;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.submission-modal-editor-container {
+  height: 400px;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .submission-timeline-card {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+  }
+  
+  .submission-card-header {
+    min-width: 0;
+  }
+  
+  .submission-card-actions {
+    justify-content: space-between;
+    margin-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 12px;
+  }
+  
+  .submission-code-modal {
+    max-height: 95vh;
+  }
+  
+  .submission-modal-editor-container {
+    height: 280px;
+  }
+}

@@ -1,5 +1,7 @@
 import React from 'react';
+import './ApiAcademicSectionDadosAlgoritmo.css';
 import {
+
   Database,
   Code,
   Users,

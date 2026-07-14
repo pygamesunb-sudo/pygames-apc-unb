@@ -1,5 +1,7 @@
 import React from 'react';
+import './ApiAcademicSectionVisaoInterface.css';
 import {
+
   Shield,
   TrendingUp,
   Sparkles,

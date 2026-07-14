@@ -1,5 +1,7 @@
 import React from 'react';
+import './ApiAcademicSectionCronoMetodo.css';
 import {
+
   Calendar,
   Play,
   FileText,

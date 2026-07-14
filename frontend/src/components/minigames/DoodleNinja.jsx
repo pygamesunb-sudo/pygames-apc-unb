@@ -28,6 +28,21 @@ const BUG_COMMANDS = ['print()', 'for i:', 'def f():', 'if x:', 'while True:', '
 
 function randomBetween(a, b) { return a + Math.random() * (b - a); }
 
+function drawHeart(ctx, x, y, size, alpha = 1) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.beginPath();
+  ctx.moveTo(x, y - size / 4);
+  ctx.bezierCurveTo(x - size / 2, y - size * 0.8, x - size, y - size * 0.2, x, y + size * 0.8);
+  ctx.bezierCurveTo(x + size, y - size * 0.2, x + size / 2, y - size * 0.8, x, y - size / 4);
+  ctx.closePath();
+  ctx.fillStyle = '#f43f5e';
+  ctx.shadowColor = '#f43f5e';
+  ctx.shadowBlur = 12;
+  ctx.fill();
+  ctx.restore();
+}
+
 export default function DoodleNinja({ onGameOver, onBackToMenu, isProblemReady, onGoToExercise }) {
   const canvasRef = useRef(null);
   const stateRef = useRef(null);
@@ -96,6 +111,7 @@ export default function DoodleNinja({ onGameOver, onBackToMenu, isProblemReady, 
       bullets: [],
       shurikens: [],
       particles: [],
+      hearts: [],
       cameraY: 0,
       score: 0,
       keys: { left: false, right: false, up: false, shoot: false, lastShoot: 0 },
@@ -237,12 +253,46 @@ export default function DoodleNinja({ onGameOver, onBackToMenu, isProblemReady, 
             e.throwTimer = 0;
           }
 
+          let wasEnemyKilled = false;
           for (let bi = bullets.length - 1; bi >= 0; bi--) {
             const b = bullets[bi];
             if (b.x > e.x && b.x < e.x + ENEMY_W && b.y > e.y && b.y < e.y + ENEMY_H) {
               bullets.splice(bi, 1);
               for (let pi = 0; pi < 10; pi++) particles.push({ x: e.x + ENEMY_W/2, y: e.y + ENEMY_H/2, vx: randomBetween(-3,3), vy: randomBetween(-3,3), color: '#f43f5e', life: 30 });
-              enemies.splice(ei, 1); s.score += 250; break;
+              enemies.splice(ei, 1); s.score += 250;
+              wasEnemyKilled = true;
+              break;
+            }
+          }
+
+          if (wasEnemyKilled) continue;
+
+          // Mecânica de pular em cima do inimigo para matá-lo
+          if (player.vy > 0 && player.y + PLAYER_H < e.y + 24) {
+            if (player.x + 4 < e.x + ENEMY_W && player.x + PLAYER_W - 4 > e.x && player.y + PLAYER_H > e.y && player.y < e.y + ENEMY_H) {
+              player.vy = JUMP_FORCE;
+              player.canDoubleJump = true;
+              for (let pi = 0; pi < 12; pi++) {
+                particles.push({
+                  x: e.x + ENEMY_W / 2,
+                  y: e.y,
+                  vx: randomBetween(-4, 4),
+                  vy: randomBetween(-4, -1),
+                  color: '#f43f5e',
+                  life: 30
+                });
+              }
+              if (!s.hearts) s.hearts = [];
+              s.hearts.push({
+                x: e.x + ENEMY_W / 2,
+                y: e.y + ENEMY_H / 2,
+                vy: -6,
+                ay: 0.25,
+                life: 45,
+              });
+              enemies.splice(ei, 1);
+              s.score += 250;
+              continue;
             }
           }
 
@@ -267,6 +317,22 @@ export default function DoodleNinja({ onGameOver, onBackToMenu, isProblemReady, 
         for (let i = particles.length - 1; i >= 0; i--) {
           const p = particles[i]; p.x += p.vx; p.y += p.vy; p.life--;
           if (p.life <= 0) particles.splice(i, 1);
+        }
+
+        if (s.hearts) {
+          for (let i = s.hearts.length - 1; i >= 0; i--) {
+            const h = s.hearts[i];
+            h.vy += h.ay;
+            h.y += h.vy;
+            h.life--;
+            if (h.life <= 0) {
+              if (s.player.lives < 3) {
+                s.player.lives++;
+                setLives(s.player.lives);
+              }
+              s.hearts.splice(i, 1);
+            }
+          }
         }
 
         setScore(s.score);
@@ -319,6 +385,14 @@ export default function DoodleNinja({ onGameOver, onBackToMenu, isProblemReady, 
         ctx.fillStyle = '#94a3b8'; ctx.strokeStyle = '#f8fafc'; ctx.lineWidth = 1.5; ctx.beginPath();
         ctx.moveTo(0, -SHURIKEN_SIZE/2); ctx.lineTo(SHURIKEN_SIZE/6, -SHURIKEN_SIZE/6); ctx.lineTo(SHURIKEN_SIZE/2, 0); ctx.lineTo(SHURIKEN_SIZE/6, SHURIKEN_SIZE/6); ctx.lineTo(0, SHURIKEN_SIZE/2); ctx.lineTo(-SHURIKEN_SIZE/6, SHURIKEN_SIZE/6); ctx.lineTo(-SHURIKEN_SIZE/2, 0); ctx.lineTo(-SHURIKEN_SIZE/6, -SHURIKEN_SIZE/6); ctx.closePath(); ctx.fill(); ctx.stroke();
         ctx.fillStyle = '#f43f5e'; ctx.beginPath(); ctx.arc(0,0,2,0,Math.PI*2); ctx.fill(); ctx.restore();
+      }
+
+      if (s.hearts) {
+        for (const h of s.hearts) {
+          const hsy = h.y - s.cameraY;
+          const alpha = h.life > 15 ? 1 : h.life / 15;
+          drawHeart(ctx, h.x, hsy, 16, alpha);
+        }
       }
 
       const isBlinking = player.invulnerableFrames > 0 && Math.floor(player.invulnerableFrames / 5) % 2 === 0;

@@ -1,0 +1,201 @@
+/* ============================================================
+   INTERACTIVE API EXERCISES PANEL
+   ============================================================ */
+
+/* Container de Exercícios */
+.api-exercises-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.exercise-progress-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: rgba(26, 34, 53, 0.6);
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-md);
+  padding: 20px;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.progress-bar-bg {
+  width: 100%;
+  background: #101524;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+  transition: width 0.4s ease;
+}
+
+/* Card do Exercício */
+.api-exercise-card {
+  background: rgba(26, 34, 53, 0.4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: var(--transition-smooth);
+}
+
+.api-exercise-card:hover {
+  border-color: rgba(99, 102, 241, 0.25);
+}
+
+.api-exercise-card--completed {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.02);
+}
+
+.api-exercise-card--completed:hover {
+  border-color: var(--accent-success);
+}
+
+.exercise-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.exercise-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.exercise-points {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--accent-warning);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.exercise-desc {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* Inputs do Quiz */
+.exercise-workspace {
+  background: #090d16;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: #cbd5e1;
+}
+
+.code-line-input {
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 4px;
+  color: var(--accent-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  padding: 2px 8px;
+  outline: none;
+  width: 140px;
+  text-align: center;
+  transition: var(--transition-fast);
+}
+
+.code-line-input:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 6px var(--accent-primary-glow);
+  background: rgba(99, 102, 241, 0.15);
+}
+
+/* Escolhas Múltiplas */
+.quiz-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.quiz-option-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+.quiz-option-item:hover {
+  border-color: var(--border-accent);
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+.quiz-option-item--selected {
+  border-color: var(--accent-primary);
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--text-primary);
+  box-shadow: 0 0 0 1px var(--accent-primary);
+}
+
+/* Alertas de Resultados */
+.exercise-feedback-alert {
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: fadeIn 0.3s ease both;
+}
+
+.exercise-feedback-alert--success {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--accent-success);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.exercise-feedback-alert--error {
+  background: rgba(244, 63, 94, 0.12);
+  color: var(--accent-danger);
+  border: 1px solid rgba(244, 63, 94, 0.3);
+}
+
+.btn-verify-exercise {
+  align-self: flex-start;
+  padding: 10px 20px;
+  font-size: 0.85rem;
+}

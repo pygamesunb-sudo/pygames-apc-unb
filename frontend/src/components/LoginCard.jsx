@@ -1,5 +1,7 @@
 import React from 'react';
 import { Terminal, Play, Trophy } from 'lucide-react';
+import './LoginCard.css';
+
 
 export default function LoginCard({ error, setError, onLogin }) {
   return (

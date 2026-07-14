@@ -1,0 +1,23 @@
+/* ============================================================
+   LEADERBOARD (PLACAR DE LIDERES)
+   ============================================================ */
+
+/* Leaderboard hover effects */
+.leaderboard-row:hover {
+  background: rgba(255, 255, 255, 0.02) !important;
+}
+
+/* Novo layout para o Leaderboard no Mobile */
+.leaderboard-mobile-list {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.leaderboard-mobile-card {
+  transition: background 0.2s ease;
+}
+
+.leaderboard-mobile-card:hover {
+  background: rgba(255, 255, 255, 0.02) !important;
+}

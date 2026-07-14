@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import { API_EXERCISES } from '../services/apiExercisesData';
+import './ApiExercisesView.css';
+
 
 export default function ApiExercisesView({
   solvedExercises,

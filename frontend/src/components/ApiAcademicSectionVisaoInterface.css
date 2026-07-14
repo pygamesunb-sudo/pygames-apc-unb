@@ -1,0 +1,124 @@
+/* ============================================================
+   VISÃO & LETRAMENTO / DESIGN & INTERFACE SECTION STYLES
+   ============================================================ */
+
+/* Vision formula */
+.vision-statement-card {
+  background: linear-gradient(135deg, rgba(17, 24, 39, 0.6) 0%, rgba(10, 14, 26, 0.6) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  padding: 24px;
+}
+
+.vision-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 20px 0;
+}
+
+.vision-title-icon {
+  color: #6366f1;
+}
+
+.vision-formula-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.formula-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+@media (max-width: 768px) {
+  .formula-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
+
+.formula-label {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #6366f1;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  padding: 4px 10px;
+  border-radius: 4px;
+  text-align: center;
+  letter-spacing: 0.05em;
+}
+
+.formula-value {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  padding-top: 3px;
+}
+
+/* Architecture diagrams */
+.architecture-diagram {
+  display: flex;
+  flex-direction: column;
+}
+
+.flow-diagram-horizontal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .flow-diagram-horizontal {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .flow-arrow {
+    transform: rotate(90deg);
+  }
+}
+
+.flow-node {
+  flex: 1;
+  background: rgba(17, 24, 39, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: center;
+  transition: var(--transition-fast);
+}
+
+.flow-node:hover {
+  border-color: rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.node-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.node-desc {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.flow-arrow {
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

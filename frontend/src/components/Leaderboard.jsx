@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Trophy, Gamepad, Award, Terminal, ArrowLeft } from 'lucide-react';
 import { getLeaderboard } from '../services/api';
+import './Leaderboard.css';
+
 
 export default function Leaderboard({ onBack }) {
   const [leaderboard, setLeaderboard] = useState([]);

@@ -25,6 +25,7 @@ export default function SnakePy({ onGameOver, onBackToMenu, isProblemReady, onGo
   const [currentScript, setCurrentScript] = useState({ lines: [], tokens: [] });
   const [currentTokenIdx, setCurrentTokenIdx] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [activePowerUp, setActivePowerUp] = useState(null);
 
   const selectScriptForLevel = useCallback((lvl) => {
     const levelKey = lvl > 4 ? 4 : lvl;
@@ -98,6 +99,22 @@ export default function SnakePy({ onGameOver, onBackToMenu, isProblemReady, onGo
     s.foods.push({ x, y, word: tokens[tokenIdx], tokenIndex: tokenIdx });
   }, []);
 
+  const spawnPowerUp = useCallback((s) => {
+    const type = Math.random() < 0.5 ? 'firewall' : 'debugger';
+    let x, y, overlap;
+    let attempts = 0;
+    do {
+      x = Math.floor(randomBetween(1, COLS - 1));
+      y = Math.floor(randomBetween(3, ROWS - 1));
+      overlap = s.snake.some(segment => segment.x === x && segment.y === y) ||
+                s.foods.some(food => food.x === x && food.y === y) ||
+                s.bugs.some(bug => bug.x === x && bug.y === y);
+      attempts++;
+    } while (overlap && attempts < 100);
+
+    s.spawnedPowerUp = { x, y, type, life: 60 };
+  }, []);
+
   const initGame = useCallback(() => {
     const initialSnake = [{ x: 12, y: 18 }, { x: 12, y: 19 }, { x: 12, y: 20 }];
     const initialLevel = 1;
@@ -111,10 +128,14 @@ export default function SnakePy({ onGameOver, onBackToMenu, isProblemReady, onGo
       snake: initialSnake,
       direction: { x: 0, y: -1 },
       nextDirection: { x: 0, y: -1 },
+      inputQueue: [],
       level: initialLevel,
       script,
       foods,
       bugs,
+      spawnedPowerUp: null,
+      activePowerUp: null,
+      particles: [],
       currentTokenIndex: 0,
       score: 0,
       lives: 3,
@@ -131,6 +152,7 @@ export default function SnakePy({ onGameOver, onBackToMenu, isProblemReady, onGo
     setLevel(initialLevel);
     setCurrentScript(script);
     setCurrentTokenIdx(0);
+    setActivePowerUp(null);
     setIsPaused(false);
   }, [selectScriptForLevel, spawnFoodsForTokens, spawnBugsForScript]);
 
@@ -152,11 +174,23 @@ export default function SnakePy({ onGameOver, onBackToMenu, isProblemReady, onGo
       }
       if (s.isGameOver || s.isPaused) return;
 
-      const dir = s.direction;
-      if ((e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') && dir.y === 0) s.nextDirection = { x: 0, y: -1 };
-      if ((e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') && dir.y === 0) s.nextDirection = { x: 0, y: 1 };
-      if ((e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') && dir.x === 0) s.nextDirection = { x: -1, y: 0 };
-      if ((e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') && dir.x === 0) s.nextDirection = { x: 1, y: 0 };
+      if (!s.inputQueue) s.inputQueue = [];
+      const lastDir = s.inputQueue.length > 0 ? s.inputQueue[s.inputQueue.length - 1] : s.direction;
+
+      if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+        if (lastDir.y === 0) s.inputQueue.push({ x: 0, y: -1 });
+      }
+      if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+        if (lastDir.y === 0) s.inputQueue.push({ x: 0, y: 1 });
+      }
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+        if (lastDir.x === 0) s.inputQueue.push({ x: -1, y: 0 });
+      }
+      if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+        if (lastDir.x === 0) s.inputQueue.push({ x: 1, y: 0 });
+      }
+
+      if (s.inputQueue.length > 2) s.inputQueue.splice(2);
     };
 
     window.addEventListener('keydown', onKeyDown);
@@ -173,7 +207,8 @@ export default function SnakePy({ onGameOver, onBackToMenu, isProblemReady, onGo
         if (!s.lastTickTime) s.lastTickTime = timestamp;
         const elapsed = timestamp - s.lastTickTime;
 
-        if (elapsed > s.tickRate) {
+        const currentTickRate = (s.activePowerUp && s.activePowerUp.type === 'debugger') ? s.tickRate * 1.4 : s.tickRate;
+        if (elapsed > currentTickRate) {
           s.lastTickTime = timestamp;
           updateLogic(s);
         }
@@ -182,6 +217,16 @@ export default function SnakePy({ onGameOver, onBackToMenu, isProblemReady, onGo
           s.floaters[i].y -= 0.8;
           s.floaters[i].life--;
           if (s.floaters[i].life <= 0) s.floaters.splice(i, 1);
+        }
+
+        if (s.particles) {
+          for (let i = s.particles.length - 1; i >= 0; i--) {
+            const p = s.particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.life--;
+            if (p.life <= 0) s.particles.splice(i, 1);
+          }
         }
       }
 
@@ -197,17 +242,55 @@ export default function SnakePy({ onGameOver, onBackToMenu, isProblemReady, onGo
       s.foods.forEach((food) => {
         const fx = food.x * GRID_SIZE;
         const fy = food.y * GRID_SIZE;
+
+        const isNextCorrectToken = food.tokenIndex === s.currentTokenIndex;
+        const isDebuggerActive = s.activePowerUp && s.activePowerUp.type === 'debugger';
+
         ctx.fillStyle = '#22d3ee';
-        
         ctx.save();
         ctx.shadowColor = '#22d3ee'; ctx.shadowBlur = 10;
         ctx.fillRect(fx + 1, fy + 1, GRID_SIZE - 2, GRID_SIZE - 2);
         ctx.restore();
 
-        ctx.fillStyle = '#f8fafc';
-        ctx.font = 'bold 9px JetBrains Mono, monospace';
+        // Pulsing gold circle highlight for debugger power-up on correct token
+        if (isNextCorrectToken && isDebuggerActive) {
+          ctx.save();
+          const pulse = 1 + Math.sin(Date.now() / 120) * 0.25;
+          ctx.strokeStyle = '#eab308';
+          ctx.lineWidth = 1.5;
+          ctx.shadowColor = '#eab308';
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.arc(fx + GRID_SIZE / 2, fy + GRID_SIZE / 2, (GRID_SIZE / 2 + 3) * pulse, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        ctx.save();
+        ctx.font = 'bold 12px JetBrains Mono, monospace';
+        const textWidth = ctx.measureText(food.word).width;
+
+        // Draw backdrop capsule to make = and - clearly visible
+        ctx.fillStyle = '#090d16';
+        ctx.strokeStyle = isNextCorrectToken && isDebuggerActive ? '#eab308' : '#22d3ee';
+        ctx.lineWidth = 1.5;
+
+        const paddingX = 5;
+        const rectW = textWidth + paddingX * 2;
+        const rectH = 16;
+        const rectX = fx + GRID_SIZE / 2 - rectW / 2;
+        const rectY = fy - 18;
+
+        ctx.beginPath();
+        ctx.roundRect(rectX, rectY, rectW, rectH, 4);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 12px JetBrains Mono, monospace';
         ctx.textAlign = 'center';
-        ctx.fillText(food.word, fx + GRID_SIZE / 2, fy - 3);
+        ctx.fillText(food.word, fx + GRID_SIZE / 2, fy - 5);
       });
 
       // Chasing Bugs
@@ -224,22 +307,73 @@ export default function SnakePy({ onGameOver, onBackToMenu, isProblemReady, onGo
         ctx.fillText('BUG', bx + GRID_SIZE / 2, by - 3);
       });
 
+      // Spawned Power-Up on Board
+      if (s.spawnedPowerUp) {
+        const px = s.spawnedPowerUp.x * GRID_SIZE;
+        const py = s.spawnedPowerUp.y * GRID_SIZE;
+        const type = s.spawnedPowerUp.type;
+        const isFW = type === 'firewall';
+        const color = isFW ? '#10b981' : '#eab308';
+        const label = isFW ? 'FW' : 'DB';
+        
+        ctx.save();
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 15 + Math.sin(Date.now() / 100) * 5;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.roundRect(px + 1, py + 1, GRID_SIZE - 2, GRID_SIZE - 2, 4);
+        ctx.fill();
+        
+        ctx.fillStyle = '#090d16';
+        ctx.font = 'bold 8px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(label, px + GRID_SIZE / 2, py + GRID_SIZE / 2 + 3);
+        ctx.restore();
+
+        ctx.fillStyle = color;
+        ctx.font = 'bold 7px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(isFW ? 'FIREWALL' : 'DEBUGGER', px + GRID_SIZE / 2, py - 3);
+      }
+
       // Snake
       const isBlinking = s.invulnerableFrames > 0 && Math.floor(s.invulnerableFrames / 5) % 2 === 0;
       if (s.invulnerableFrames > 0) s.invulnerableFrames--;
 
       if (!isBlinking) {
+        const hasFW = s.activePowerUp && s.activePowerUp.type === 'firewall';
+        const hasDB = s.activePowerUp && s.activePowerUp.type === 'debugger';
+
+        let primaryColor = '#6366f1';
+        let secondaryColor = 'rgba(99, 102, 241';
+        let shadowColor = '#6366f1';
+
+        if (hasFW) {
+          primaryColor = '#10b981';
+          secondaryColor = 'rgba(16, 185, 129';
+          shadowColor = '#10b981';
+        } else if (hasDB) {
+          primaryColor = '#eab308';
+          secondaryColor = 'rgba(234, 179, 8';
+          shadowColor = '#eab308';
+        }
+
         s.snake.forEach((segment, index) => {
           const sx = segment.x * GRID_SIZE;
           const sy = segment.y * GRID_SIZE;
 
           if (index === 0) {
-            ctx.fillStyle = '#6366f1'; ctx.shadowColor = '#6366f1'; ctx.shadowBlur = 12;
+            ctx.fillStyle = primaryColor; ctx.shadowColor = shadowColor; ctx.shadowBlur = 14;
             ctx.beginPath(); ctx.roundRect(sx + 0.5, sy + 0.5, GRID_SIZE - 1, GRID_SIZE - 1, 4); ctx.fill(); ctx.shadowBlur = 0;
             ctx.fillStyle = '#ffffff'; ctx.fillRect(sx + 4, sy + 4, 2, 2); ctx.fillRect(sx + 10, sy + 4, 2, 2);
           } else {
-            ctx.fillStyle = `rgba(99, 102, 241, ${1 - index / (s.snake.length + 3)})`;
+            ctx.fillStyle = `${secondaryColor}, ${1 - index / (s.snake.length + 3)})`;
             ctx.beginPath(); ctx.roundRect(sx + 1, sy + 1, GRID_SIZE - 2, GRID_SIZE - 2, 2); ctx.fill();
+            if (hasFW || hasDB) {
+              ctx.strokeStyle = primaryColor;
+              ctx.lineWidth = 1;
+              ctx.strokeRect(sx + 1, sy + 1, GRID_SIZE - 2, GRID_SIZE - 2);
+            }
           }
         });
       }
@@ -250,10 +384,35 @@ export default function SnakePy({ onGameOver, onBackToMenu, isProblemReady, onGo
         ctx.fillText(f.word, f.x, f.y);
       }
 
+      if (s.particles) {
+        for (const p of s.particles) {
+          ctx.fillStyle = p.color;
+          ctx.fillRect(p.x, p.y, 2, 2);
+        }
+      }
+
       animRef.current = requestAnimationFrame(gameLoop);
     }
 
     function updateLogic(s) {
+      // Decrementar temporizadores de power-ups
+      if (s.activePowerUp) {
+        s.activePowerUp.life--;
+        if (s.activePowerUp.life <= 0) {
+          s.activePowerUp = null;
+        }
+      }
+      if (s.spawnedPowerUp) {
+        s.spawnedPowerUp.life--;
+        if (s.spawnedPowerUp.life <= 0) {
+          s.spawnedPowerUp = null;
+        }
+      }
+
+      // Dequeue next direction if queue is not empty
+      if (s.inputQueue && s.inputQueue.length > 0) {
+        s.nextDirection = s.inputQueue.shift();
+      }
       s.direction = s.nextDirection;
       const head = s.snake[0];
       const newHead = { x: head.x + s.direction.x, y: head.y + s.direction.y };
@@ -265,19 +424,69 @@ export default function SnakePy({ onGameOver, onBackToMenu, isProblemReady, onGo
         loseLife(s); return;
       }
 
-      // Chase bugs 50% speed
-      if (s.bugs) {
-        for (let i = 0; i < s.bugs.length; i++) {
-          const bug = s.bugs[i];
-          bug.tickCounter++;
-          if (bug.tickCounter >= 2) {
-            bug.tickCounter = 0;
-            const dx = head.x - bug.x;
-            const dy = head.y - bug.y;
-            if (Math.abs(dx) > Math.abs(dy)) bug.x += Math.sign(dx);
-            else bug.y += Math.sign(dy);
+      // Coleta de Power-up
+      if (s.spawnedPowerUp && newHead.x === s.spawnedPowerUp.x && newHead.y === s.spawnedPowerUp.y) {
+        s.activePowerUp = { type: s.spawnedPowerUp.type, life: 80 };
+        
+        const txt = s.spawnedPowerUp.type === 'firewall' ? '+FIREWALL SHIELD' : '+DEBUGGER (SLOW)';
+        const col = s.spawnedPowerUp.type === 'firewall' ? '#10b981' : '#eab308';
+        s.floaters.push({
+          x: s.spawnedPowerUp.x * GRID_SIZE + GRID_SIZE / 2,
+          y: s.spawnedPowerUp.y * GRID_SIZE,
+          word: txt,
+          life: 40,
+          color: col
+        });
 
-            if (s.invulnerableFrames <= 0 && bug.x === head.x && bug.y === head.y) {
+        if (s.particles) {
+          for (let pi = 0; pi < 12; pi++) {
+            s.particles.push({
+              x: s.spawnedPowerUp.x * GRID_SIZE + GRID_SIZE / 2,
+              y: s.spawnedPowerUp.y * GRID_SIZE + GRID_SIZE / 2,
+              vx: randomBetween(-2.5, 2.5),
+              vy: randomBetween(-2.5, 2.5),
+              color: col,
+              life: 25
+            });
+          }
+        }
+        s.spawnedPowerUp = null;
+      }
+
+      // Chase bugs 50% speed
+      const isDebuggerActive = s.activePowerUp && s.activePowerUp.type === 'debugger';
+      if (s.bugs) {
+        for (let i = s.bugs.length - 1; i >= 0; i--) {
+          const bug = s.bugs[i];
+          if (!isDebuggerActive) {
+            bug.tickCounter++;
+            if (bug.tickCounter >= 2) {
+              bug.tickCounter = 0;
+              const dx = head.x - bug.x;
+              const dy = head.y - bug.y;
+              if (Math.abs(dx) > Math.abs(dy)) bug.x += Math.sign(dx);
+              else bug.y += Math.sign(dy);
+            }
+          }
+          if (bug.x === head.x && bug.y === head.y) {
+            if (s.activePowerUp && s.activePowerUp.type === 'firewall') {
+              if (s.particles) {
+                for (let pi = 0; pi < 15; pi++) {
+                  s.particles.push({
+                    x: bug.x * GRID_SIZE + GRID_SIZE / 2,
+                    y: bug.y * GRID_SIZE + GRID_SIZE / 2,
+                    vx: randomBetween(-3, 3),
+                    vy: randomBetween(-3, 3),
+                    color: '#f43f5e',
+                    life: 30
+                  });
+                }
+              }
+              s.floaters.push({ x: bug.x * GRID_SIZE + GRID_SIZE / 2, y: bug.y * GRID_SIZE, word: 'BUG PATCHED!', life: 30, color: '#10b981' });
+              s.bugs.splice(i, 1);
+              s.score += 200;
+              continue;
+            } else if (s.invulnerableFrames <= 0) {
               loseLife(s); return;
             }
           }
@@ -316,9 +525,14 @@ export default function SnakePy({ onGameOver, onBackToMenu, isProblemReady, onGo
             s.foods = spawnFoodsForTokens(s.snake, nextScript.tokens, 0, 2 * nextScript.lines.length);
             s.bugs = spawnBugsForScript(s.snake, s.foods, nextScript.lines.length);
             s.tickRate = Math.max(90, s.tickRate - 6);
+            s.spawnedPowerUp = null;
           } else {
             s.foods.splice(eatenFoodIdx, 1);
             replenishFood(s);
+
+            if (Math.random() < 0.20) {
+              spawnPowerUp(s);
+            }
           }
         } else {
           s.score = Math.max(0, s.score - 150);
@@ -333,14 +547,36 @@ export default function SnakePy({ onGameOver, onBackToMenu, isProblemReady, onGo
         s.snake.pop();
       }
 
-      if (s.invulnerableFrames <= 0 && s.bugs) {
-        const hitBug = s.bugs.some(bug => s.snake.some(seg => seg.x === bug.x && seg.y === bug.y));
-        if (hitBug) {
-          loseLife(s); return;
+      if (s.bugs) {
+        for (let bi = s.bugs.length - 1; bi >= 0; bi--) {
+          const bug = s.bugs[bi];
+          const hitSegment = s.snake.some(seg => seg.x === bug.x && seg.y === bug.y);
+          if (hitSegment) {
+            if (s.activePowerUp && s.activePowerUp.type === 'firewall') {
+              if (s.particles) {
+                for (let pi = 0; pi < 15; pi++) {
+                  s.particles.push({
+                    x: bug.x * GRID_SIZE + GRID_SIZE / 2,
+                    y: bug.y * GRID_SIZE + GRID_SIZE / 2,
+                    vx: randomBetween(-3, 3),
+                    vy: randomBetween(-3, 3),
+                    color: '#f43f5e',
+                    life: 30
+                  });
+                }
+              }
+              s.floaters.push({ x: bug.x * GRID_SIZE + GRID_SIZE / 2, y: bug.y * GRID_SIZE, word: 'BUG PATCHED!', life: 30, color: '#10b981' });
+              s.bugs.splice(bi, 1);
+              s.score += 200;
+            } else if (s.invulnerableFrames <= 0) {
+              loseLife(s); return;
+            }
+          }
         }
       }
 
       setScore(s.score);
+      setActivePowerUp(s.activePowerUp ? { type: s.activePowerUp.type, life: s.activePowerUp.life } : null);
     }
 
     function loseLife(s) {
@@ -350,6 +586,7 @@ export default function SnakePy({ onGameOver, onBackToMenu, isProblemReady, onGo
       } else {
         const snakeReset = [{ x: 12, y: 18 }, { x: 12, y: 19 }, { x: 12, y: 20 }];
         s.snake = snakeReset; s.direction = { x: 0, y: -1 }; s.nextDirection = { x: 0, y: -1 };
+        s.inputQueue = [];
         s.currentTokenIndex = 0; setCurrentTokenIdx(0);
         s.foods = spawnFoodsForTokens(snakeReset, s.script.tokens, 0, 2 * s.script.lines.length);
         s.bugs = spawnBugsForScript(snakeReset, s.foods, s.script.lines.length);
@@ -369,8 +606,15 @@ export default function SnakePy({ onGameOver, onBackToMenu, isProblemReady, onGo
     const s = stateRef.current;
     if (s.isGameOver || s.isPaused) return;
 
-    if (dx !== 0 && s.direction.x === 0) s.nextDirection = { x: dx, y: 0 };
-    if (dy !== 0 && s.direction.y === 0) s.nextDirection = { x: 0, y: dy };
+    if (!s.inputQueue) s.inputQueue = [];
+    const lastDir = s.inputQueue.length > 0 ? s.inputQueue[s.inputQueue.length - 1] : s.direction;
+    if (dx !== 0 && lastDir.x === 0) {
+      s.inputQueue.push({ x: dx, y: 0 });
+    }
+    if (dy !== 0 && lastDir.y === 0) {
+      s.inputQueue.push({ x: 0, y: dy });
+    }
+    if (s.inputQueue.length > 2) s.inputQueue.splice(2);
   };
 
   const handleUnpause = () => {
@@ -394,7 +638,21 @@ export default function SnakePy({ onGameOver, onBackToMenu, isProblemReady, onGo
         </span>
       </div>
 
-      <CodeDisplay currentScript={currentScript} />
+      {activePowerUp && (
+        <div className="powerup-status-hud animate-pulse" style={{
+          textAlign: 'center',
+          fontSize: '0.8rem',
+          fontWeight: 'bold',
+          color: activePowerUp.type === 'firewall' ? '#10b981' : '#eab308',
+          textShadow: `0 0 8px ${activePowerUp.type === 'firewall' ? '#10b981' : '#eab308'}`,
+          marginTop: '-4px',
+          marginBottom: '6px'
+        }}>
+          {activePowerUp.type === 'firewall' ? '🛡️ FIREWALL ATIVO' : '⚙️ DEPURAÇÃO (SLOW-MO)'} ({Math.ceil(activePowerUp.life / 6)}s)
+        </div>
+      )}
+
+      <CodeDisplay currentScript={currentScript} currentTokenIdx={currentTokenIdx} />
 
       <div className="canvas-wrapper">
         <canvas ref={canvasRef} width={CANVAS_W} height={CANVAS_H} className="retro-canvas" />

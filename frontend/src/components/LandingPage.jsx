@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Code2,
   Brain,
@@ -12,6 +12,8 @@ import {
   Users,
   Star,
   ChevronRight,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 import {
   loginWithGoogle,
@@ -57,7 +59,7 @@ const STATS = [
   { icon: Star, value: '98%', label: 'Satisfação dos alunos' },
 ];
 
-function ArcadeIllustration() {
+function ArcadeIllustration({ activeField, isLoading }) {
   return (
     <div className="arcade-illustration" aria-hidden="true">
       <div className="arcade-illustration__glow" />
@@ -90,17 +92,49 @@ function ArcadeIllustration() {
 
       <div className="arcade-machine">
         <div className="arcade-machine__monitor">
-          <div className="arcade-machine__screen">
-            <Code2 size={52} strokeWidth={1.5} />
+          <div className={`arcade-machine__screen ${isLoading ? 'arcade-machine__screen--loading' : ''} ${activeField ? 'arcade-machine__screen--active' : ''}`}>
+            <div className="crt-glow-overlay" />
+            <div className="scanlines-overlay" />
+            
+            {isLoading ? (
+              <div className="arcade-screen-status loading">
+                <span className="arcade-screen-dot pulse" />
+                <span className="arcade-screen-text font-mono">LOADING...</span>
+                <span className="arcade-screen-sub font-mono">CONNECTING TO HOST</span>
+              </div>
+            ) : activeField === 'email' ? (
+              <div className="arcade-screen-status active">
+                <span className="arcade-screen-text font-mono">&gt; INPUT: EMAIL</span>
+                <span className="arcade-screen-sub font-mono">sys.read_input()</span>
+                <div className="matrix-rain-mock">
+                  <span>10101</span><span>01101</span><span>11001</span>
+                </div>
+              </div>
+            ) : activeField === 'password' ? (
+              <div className="arcade-screen-status active-alt">
+                <span className="arcade-screen-text font-mono">&gt; SECURE KEY</span>
+                <span className="arcade-screen-sub font-mono">decrypting_sha256</span>
+                <div className="lock-icon-glow">🔒</div>
+              </div>
+            ) : (
+              <div className="arcade-screen-status idle">
+                <Code2 size={44} strokeWidth={1.5} className="pulse-logo" />
+                <span className="arcade-screen-start font-mono">PRESS START</span>
+              </div>
+            )}
           </div>
           <div className="arcade-machine__stand" />
         </div>
         <div className="arcade-machine__keyboard">
           {Array.from({ length: 18 }).map((_, i) => (
-            <span key={i} />
+            <span 
+              key={i} 
+              className={activeField ? 'arcade-machine__key--typing' : ''} 
+              style={{ animationDelay: `${i * 0.05}s` }} 
+            />
           ))}
         </div>
-        <div className="arcade-machine__joystick" />
+        <div className={`arcade-machine__joystick ${activeField ? 'arcade-machine__joystick--moving' : ''}`} />
       </div>
     </div>
   );
@@ -116,10 +150,78 @@ export default function LandingPage({ error, setError }) {
   const [isLoading, setIsLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
 
+  // Interactive enhancements
+  const [activeField, setActiveField] = useState(null);
+  const [isMuted, setIsMuted] = useState(true);
+  const [shakeError, setShakeError] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  const handleMouseMove = (e) => {
+    const { clientX, clientY } = e;
+    const { innerWidth, innerHeight } = window;
+    // Calculate values from -1 to 1 representing relative mouse location
+    setMousePos({
+      x: (clientX / innerWidth - 0.5) * 2,
+      y: (clientY / innerHeight - 0.5) * 2,
+    });
+  };
+
+  const playSound = (type) => {
+    if (isMuted) return;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      if (type === 'type') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(440 + Math.random() * 80, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.04);
+        gain.gain.setValueAtTime(0.04, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.04);
+      } else if (type === 'click') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(600, ctx.currentTime);
+        osc.frequency.setValueAtTime(900, ctx.currentTime + 0.05);
+        gain.gain.setValueAtTime(0.05, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.12);
+      } else if (type === 'success') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+        osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.08); // E5
+        osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.16); // G5
+        osc.frequency.setValueAtTime(1046.50, ctx.currentTime + 0.24); // C6
+        gain.gain.setValueAtTime(0.05, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.35);
+      } else if (type === 'error') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, ctx.currentTime);
+        osc.frequency.setValueAtTime(100, ctx.currentTime + 0.06);
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.2);
+      }
+    } catch (e) {
+      console.warn("AudioContext failed", e);
+    }
+  };
+
   const handleEmailAuth = async (e) => {
     e.preventDefault();
     if (!email.trim() || !password) {
       setError('Preencha e-mail e senha.');
+      setShakeError(true);
+      playSound('error');
+      setTimeout(() => setShakeError(false), 500);
       return;
     }
 
@@ -132,8 +234,12 @@ export default function LandingPage({ error, setError }) {
       } else {
         await loginWithEmail(email, password, rememberMe);
       }
+      playSound('success');
     } catch (err) {
       setError(err.message || 'Falha ao autenticar.');
+      setShakeError(true);
+      playSound('error');
+      setTimeout(() => setShakeError(false), 500);
     } finally {
       setIsLoading(false);
     }
@@ -145,8 +251,12 @@ export default function LandingPage({ error, setError }) {
     setIsLoading(true);
     try {
       await loginWithGoogle(rememberMe);
+      playSound('success');
     } catch (err) {
       setError(err.message || 'Falha ao autenticar com o Google.');
+      setShakeError(true);
+      playSound('error');
+      setTimeout(() => setShakeError(false), 500);
     } finally {
       setIsLoading(false);
     }
@@ -155,6 +265,9 @@ export default function LandingPage({ error, setError }) {
   const handleForgotPassword = async () => {
     if (!email.trim()) {
       setError('Digite seu e-mail para recuperar a senha.');
+      setShakeError(true);
+      playSound('error');
+      setTimeout(() => setShakeError(false), 500);
       return;
     }
     setError(null);
@@ -163,8 +276,12 @@ export default function LandingPage({ error, setError }) {
     try {
       await resetPassword(email);
       setSuccessMsg('E-mail de recuperação enviado! Verifique sua caixa de entrada.');
+      playSound('success');
     } catch (err) {
       setError(err.message || 'Não foi possível enviar o e-mail de recuperação.');
+      setShakeError(true);
+      playSound('error');
+      setTimeout(() => setShakeError(false), 500);
     } finally {
       setIsLoading(false);
     }
@@ -174,17 +291,25 @@ export default function LandingPage({ error, setError }) {
     setActiveNav(id);
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    playSound('click');
   };
 
   return (
-    <div className="landing">
+    <div 
+      className="landing" 
+      onMouseMove={handleMouseMove} 
+      style={{ 
+        '--mouse-x': mousePos.x, 
+        '--mouse-y': mousePos.y 
+      }}
+    >
       <header className="landing-nav">
         <div className="landing-nav__inner">
           <button className="landing-logo" onClick={() => scrollTo('inicio')}>
             <span className="landing-logo__icon">
               <Code2 size={18} />
             </span>
-            <span className="landing-logo__text">
+            <span className="landing-logo__text glitch-title" data-text="PYTHON ARCADE">
               <span className="landing-logo__python">PYTHON</span>
               <span className="landing-logo__arcade">ARCADE</span>
             </span>
@@ -202,9 +327,19 @@ export default function LandingPage({ error, setError }) {
             ))}
           </nav>
 
-          <button className="landing-nav__cta" onClick={() => scrollTo('login')}>
-            Começar Agora
-          </button>
+          <div className="landing-nav__actions">
+            <button 
+              className={`landing-sound-btn ${!isMuted ? 'active' : ''}`}
+              onClick={() => { setIsMuted(!isMuted); playSound('click'); }}
+              title={isMuted ? "Ativar som retrô" : "Mutar som"}
+            >
+              {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+              <span>{isMuted ? 'AUDIO OFF' : 'AUDIO ON'}</span>
+            </button>
+            <button className="landing-nav__cta" onClick={() => scrollTo('login')}>
+              Começar Agora
+            </button>
+          </div>
         </div>
       </header>
 
@@ -213,7 +348,7 @@ export default function LandingPage({ error, setError }) {
           <div className="landing-hero__left">
             <span className="landing-badge">APRENDA. PRATIQUE. EVOLUA.</span>
 
-            <h1 className="landing-title">
+            <h1 className="landing-title neon-title">
               Aprenda Python de forma{' '}
               <span className="landing-title__purple">divertida</span> e{' '}
               <span className="landing-title__blue">inteligente.</span>
@@ -249,43 +384,61 @@ export default function LandingPage({ error, setError }) {
           </div>
 
           <div className="landing-hero__center">
-            <ArcadeIllustration />
+            <ArcadeIllustration activeField={activeField} isLoading={isLoading} />
           </div>
 
           <div className="landing-hero__right" id="login">
-            <div className="landing-login__card">
-              <h2>{isSignup ? 'Crie sua conta' : 'Acesse sua conta'}</h2>
-              <p>
+            <div className={`landing-login__card cyber-panel ${shakeError ? 'shake' : ''}`}>
+              <div className="cyber-bracket cyber-bracket--top-left" />
+              <div className="cyber-bracket cyber-bracket--top-right" />
+              <div className="cyber-bracket cyber-bracket--bottom-left" />
+              <div className="cyber-bracket cyber-bracket--bottom-right" />
+              <div className="cyber-grid-overlay" />
+              
+              <div className="cyber-terminal-header">
+                <div className="cyber-status-light">
+                  <span className="blinking-dot"></span>
+                  <span>SYS.AUTH_SECURE</span>
+                </div>
+                <span className="cyber-serial">NODE // APC-88</span>
+              </div>
+
+              <h2>{isSignup ? 'CREATE_ACCOUNT.EXE' : 'ACCESS_SYSTEM.EXE'}</h2>
+              <p className="cyber-sub">
                 {isSignup
-                  ? 'Cadastre-se e comece sua jornada no Python Arcade.'
-                  : 'Entre para continuar sua jornada no Python Arcade.'}
+                  ? 'Cadastre-se e inicialize sua simulação no Python Arcade.'
+                  : 'Insira suas credenciais para reestabelecer conexão.'}
               </p>
 
               <form onSubmit={handleEmailAuth}>
-                <label className="landing-field">
-                  <Mail size={16} />
+                <label className="landing-field cyber-field">
+                  <Mail size={16} className={`field-icon ${activeField === 'email' ? 'active' : ''}`} />
                   <input
                     type="email"
                     placeholder="E-mail"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => { setEmail(e.target.value); playSound('type'); }}
+                    onFocus={() => { setActiveField('email'); playSound('type'); }}
+                    onBlur={() => setActiveField(null)}
                     autoComplete="email"
                   />
                 </label>
 
-                <label className="landing-field">
-                  <Lock size={16} />
+                <label className="landing-field cyber-field">
+                  <Lock size={16} className={`field-icon ${activeField === 'password' ? 'active' : ''}`} />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Senha"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => { setPassword(e.target.value); playSound('type'); }}
+                    onFocus={() => { setActiveField('password'); playSound('type'); }}
+                    onBlur={() => setActiveField(null)}
                     autoComplete={isSignup ? 'new-password' : 'current-password'}
                   />
                   <button
                     type="button"
                     className="landing-field__toggle"
-                    onClick={() => setShowPassword((v) => !v)}
+                    onClick={() => { setShowPassword((v) => !v); playSound('click'); }}
                     aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -293,63 +446,89 @@ export default function LandingPage({ error, setError }) {
                 </label>
 
                 <div className="landing-form-row">
-                  <label className="landing-checkbox">
+                  <label className="landing-checkbox cyber-checkbox-label">
                     <input
                       type="checkbox"
                       checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
+                      onChange={(e) => { setRememberMe(e.target.checked); playSound('click'); }}
                     />
+                    <span className="cyber-checkbox-custom" />
                     Lembrar de mim
                   </label>
-                  <button type="button" className="landing-link" onClick={handleForgotPassword}>
+                  <button 
+                    type="button" 
+                    className="landing-link cyber-link" 
+                    onClick={() => { handleForgotPassword(); playSound('click'); }}
+                  >
                     Esqueci minha senha
                   </button>
                 </div>
 
                 {error && (
-                  <div className="landing-error">
+                  <div className="landing-error cyber-alert cyber-alert--error">
+                    <div className="cyber-alert__accent" />
                     <span>{error}</span>
-                    <button type="button" onClick={() => setError(null)}>×</button>
+                    <button type="button" onClick={() => { setError(null); playSound('click'); }}>×</button>
                   </div>
                 )}
 
                 {successMsg && (
-                  <div className="landing-success">
+                  <div className="landing-success cyber-alert cyber-alert--success">
+                    <div className="cyber-alert__accent" />
                     <span>{successMsg}</span>
                   </div>
                 )}
 
-                <button type="submit" className="landing-btn-submit" disabled={isLoading}>
-                  {isLoading ? 'Aguarde...' : isSignup ? 'Cadastrar' : 'Entrar'}
+                <button 
+                  type="submit" 
+                  className="landing-btn-submit cyber-btn" 
+                  disabled={isLoading}
+                  onClick={() => playSound('click')}
+                >
+                  {isLoading ? (
+                    <div className="btn-loader">
+                      <span className="spinner"></span>
+                      <span>CONNECTING...</span>
+                    </div>
+                  ) : isSignup ? (
+                    'INITIALIZE_CADASTRO.EXE'
+                  ) : (
+                    'CONNECT_SESSION.EXE'
+                  )}
                 </button>
               </form>
 
-              <div className="landing-divider">
-                <span>ou continue com:</span>
+              <div className="landing-divider cyber-divider">
+                <span>ALTERNATIVE_AUTH</span>
               </div>
 
-              <button className="landing-btn-google" onClick={handleGoogleLogin} disabled={isLoading}>
+              <button 
+                className="landing-btn-google cyber-btn-social" 
+                onClick={() => { handleGoogleLogin(); playSound('click'); }} 
+                disabled={isLoading}
+              >
                 <svg viewBox="0 0 24 24" width="18" height="18">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                  <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                  <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" opacity="0.8" />
+                  <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" opacity="0.7" />
+                  <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" opacity="0.9" />
                 </svg>
-                Entrar com Google
+                ENTRAR_COM_GOOGLE
               </button>
 
-              <p className="landing-signup">
-                {isSignup ? 'Já tem uma conta?' : 'Não tem uma conta?'}{' '}
+              <p className="landing-signup cyber-signup-footer">
+                {isSignup ? 'SYS.REGISTERED_USER?' : 'SYS.NEW_USER?'}{' '}
                 <button
                   type="button"
-                  className="landing-link"
+                  className="landing-link cyber-link"
                   onClick={() => {
                     setIsSignup((v) => !v);
                     setError(null);
                     setSuccessMsg('');
+                    playSound('click');
                   }}
                 >
-                  {isSignup ? 'Entrar' : 'Cadastre-se'}
+                  {isSignup ? '[LOGIN]' : '[SIGN_UP]'}
                 </button>
               </p>
             </div>

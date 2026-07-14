@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { History, ArrowLeft, Code, Eye, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import { getSubmissionsHistory } from '../services/api';
+import './SubmissionHistory.css';
+
 
 export default function SubmissionHistory({ onBack }) {
   const [submissions, setSubmissions] = useState([]);

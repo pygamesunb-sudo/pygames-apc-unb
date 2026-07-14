@@ -1,5 +1,7 @@
 import ProblemSolver from '../components/ProblemSolver';
 import { ArrowLeft } from 'lucide-react';
+import './Exercise.css';
+
 
 /**
  * Tela de resolucao do problema gerado.

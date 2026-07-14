@@ -21,17 +21,39 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID || ""
 };
 
-const isConfigured = firebaseConfig.apiKey && firebaseConfig.projectId;
+export const isConfigured = 
+  firebaseConfig.apiKey && 
+  firebaseConfig.projectId && 
+  firebaseConfig.apiKey !== "your-firebase-api-key" &&
+  firebaseConfig.apiKey !== "";
+
+const mockAuth = {
+  currentUser: {
+    uid: "test-user-uid-12345",
+    displayName: "Jogador Local (Mock)",
+    email: "test@pygameapc.com",
+    photoURL: null,
+    getIdToken: () => Promise.resolve("mock-testing-token-apc")
+  },
+  onAuthStateChanged: (callback) => {
+    const loggedIn = localStorage.getItem("mock_logged_in") === "true";
+    setTimeout(() => {
+      callback(loggedIn ? mockAuth.currentUser : null);
+    }, 100);
+    return () => {};
+  },
+  authStateReady: () => Promise.resolve()
+};
 
 if (!isConfigured) {
   console.warn(
-    "[Firebase] Chaves de configuracao nao encontradas no arquivo frontend/.env! " +
-    "Por favor, configure as variaveis VITE_FIREBASE_API_KEY e VITE_FIREBASE_PROJECT_ID."
+    "[Firebase] Chaves reais de configuracao nao encontradas no arquivo frontend/.env! " +
+    "O aplicativo rodará no modo de fallback/bypass local com credenciais simuladas."
   );
 }
 
 const app = isConfigured ? initializeApp(firebaseConfig) : null;
-export const auth = app ? getAuth(app) : null;
+export const auth = app ? getAuth(app) : mockAuth;
 
 function createGoogleProvider() {
   const provider = new GoogleAuthProvider();
@@ -78,6 +100,13 @@ async function applyPersistence(rememberMe = true) {
 }
 
 export async function loginWithGoogle(rememberMe = true) {
+  if (!isConfigured) {
+    localStorage.setItem("mock_logged_in", "true");
+    setTimeout(() => {
+      window.location.reload();
+    }, 100);
+    return { user: mockAuth.currentUser };
+  }
   await applyPersistence(rememberMe);
   const provider = createGoogleProvider();
   try {
@@ -88,6 +117,13 @@ export async function loginWithGoogle(rememberMe = true) {
 }
 
 export async function loginWithEmail(email, password, rememberMe = true) {
+  if (!isConfigured) {
+    localStorage.setItem("mock_logged_in", "true");
+    setTimeout(() => {
+      window.location.reload();
+    }, 100);
+    return { user: mockAuth.currentUser };
+  }
   await applyPersistence(rememberMe);
   try {
     return await signInWithEmailAndPassword(ensureAuth(), email.trim(), password);
@@ -97,6 +133,13 @@ export async function loginWithEmail(email, password, rememberMe = true) {
 }
 
 export async function registerWithEmail(email, password, rememberMe = true) {
+  if (!isConfigured) {
+    localStorage.setItem("mock_logged_in", "true");
+    setTimeout(() => {
+      window.location.reload();
+    }, 100);
+    return { user: mockAuth.currentUser };
+  }
   await applyPersistence(rememberMe);
   try {
     return await createUserWithEmailAndPassword(ensureAuth(), email.trim(), password);
@@ -106,6 +149,9 @@ export async function registerWithEmail(email, password, rememberMe = true) {
 }
 
 export async function resetPassword(email) {
+  if (!isConfigured) {
+    return;
+  }
   try {
     await sendPasswordResetEmail(ensureAuth(), email.trim());
   } catch (error) {
@@ -114,6 +160,13 @@ export async function resetPassword(email) {
 }
 
 export async function logout() {
+  if (!isConfigured) {
+    localStorage.removeItem("mock_logged_in");
+    setTimeout(() => {
+      window.location.reload();
+    }, 100);
+    return;
+  }
   if (!auth) return;
   return signOut(auth);
 }
