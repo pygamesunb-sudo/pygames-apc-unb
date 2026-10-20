@@ -202,10 +202,15 @@ async def _call_reviewer_llm(messages: list[dict]) -> dict:
     """Chama a LLM do revisor e parseia a resposta JSON com fallback robusto."""
     import asyncio
     import random
+    if not (settings.openrouter_api_key or "").strip():
+        raise RuntimeError(
+            "OPENROUTER_API_KEY nao configurada na Function. "
+            "Defina o segredo antes de revisar exercicios."
+        )
     headers = {
         "Authorization": f"Bearer {settings.openrouter_api_key}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://pygame-apc.web.app",
+        "HTTP-Referer": settings.openrouter_referer(),
         "X-Title": "Pygame-APC",
     }
     

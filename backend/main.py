@@ -3,6 +3,11 @@ import os
 import logging
 import asyncio
 from firebase_functions import https_fn
+from firebase_functions.options import MemoryOption
+from firebase_functions.params import SecretParam
+
+# Valor fica no Secret Manager. Nao entra no codigo, no Git nem no frontend.
+OPENROUTER_API_KEY = SecretParam("OPENROUTER_API_KEY")
 
 # Ensure the backend directory is in the system path so imports work correctly
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
@@ -18,7 +23,11 @@ async def run_asgi(asgi_app, req: https_fn.Request) -> https_fn.Response:
     headers = []
     for key, value in req.headers.items():
         headers.append((key.lower().encode('latin-1'), value.encode('latin-1')))
-        
+
+    query_string = req.query_string or b""
+    if isinstance(query_string, str):
+        query_string = query_string.encode("latin-1")
+
     scope = {
         'type': 'http',
         'asgi': {'version': '3.0', 'spec_version': '2.0'},
@@ -26,7 +35,7 @@ async def run_asgi(asgi_app, req: https_fn.Request) -> https_fn.Response:
         'method': req.method,
         'path': req.path,
         'raw_path': req.path.encode('utf-8'),
-        'query_string': req.query_string,
+        'query_string': query_string,
         'headers': headers,
         'server': (req.host or 'localhost', 80),
         'client': (req.remote_addr or '127.0.0.1', 0),
@@ -76,7 +85,12 @@ async def run_asgi(asgi_app, req: https_fn.Request) -> https_fn.Response:
         headers=headers_dict
     )
 
-@https_fn.on_request()
+@https_fn.on_request(
+    timeout_sec=300,
+    memory=MemoryOption.MB_512,
+    invoker="public",
+    secrets=[OPENROUTER_API_KEY],
+)
 def api(req: https_fn.Request) -> https_fn.Response:
     try:
         # Run the ASGI app using asyncio.run to avoid nested event loop deadlocks

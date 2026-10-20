@@ -14,7 +14,19 @@ build/
 
 # Variaveis de Ambiente (NUNCA subir no repositorio)
 .env
+.env.local
+.env.development
+.env.development.local
+.env.production
+.env.production.local
+.env.*.local
+.env.*
+!.env.example
 *.env
+
+# Credenciais Firebase (service account). Nunca versionar.
+firebase_credentials.json
+**/firebase_credentials.json
 
 # Node / React
 node_modules/

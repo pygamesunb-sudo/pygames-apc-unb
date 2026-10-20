@@ -11,10 +11,24 @@ class Settings(BaseSettings):
     openrouter_api_key: str = ""
     openrouter_model: str = "nvidia/nemotron-3-super-120b-a12b:free"
     fb_credentials_path: str = "./firebase_credentials.json"
-    firebase_project_id: str = "pygames-apc"
+    firebase_project_id: str = "pygamesapcprojeto"
+    cors_origins: str = ""
+    app_public_url: str = ""
     api_host: str = "0.0.0.0"
     api_port: int = 8000
     testing_bypass_auth: bool = False
+
+    def resolved_firebase_project_id(self) -> str:
+        """ID do projeto atual. Em Cloud Functions o GCP injeta GCLOUD_PROJECT."""
+        return (
+            (self.firebase_project_id or "").strip()
+            or os.getenv("GCLOUD_PROJECT", "").strip()
+            or os.getenv("GOOGLE_CLOUD_PROJECT", "").strip()
+        )
+
+    def openrouter_referer(self) -> str:
+        """Referer enviado ao OpenRouter. Nao aponta para o Hosting antigo."""
+        return (self.app_public_url or "").strip() or "https://pygamesapcprojeto.web.app"
 
     def load_from_firebase(self):
         """
@@ -40,10 +54,14 @@ class Settings(BaseSettings):
                         except Exception:
                             # Fallback local sem credenciais
                             import google.auth.credentials
+                            project_id = self.resolved_firebase_project_id()
+                            if not project_id:
+                                print("[Config] FIREBASE_PROJECT_ID ausente. Mantendo configuracao local.")
+                                return
                             firebase_admin.initialize_app(
                                 credential=google.auth.credentials.AnonymousCredentials(),
                                 options={
-                                    'projectId': self.firebase_project_id
+                                    'projectId': project_id
                                 }
                             )
                 except Exception as e:

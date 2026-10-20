@@ -99,10 +99,15 @@ async def _call_gemini_api(messages: list[dict], api_key: str, temperature: floa
 async def _call_llm(messages: list[dict], temperature: float = 0.7) -> str:
     """Realiza uma chamada a API do OpenRouter e retorna o conteudo da resposta."""
     import asyncio
+    if not (settings.openrouter_api_key or "").strip():
+        raise RuntimeError(
+            "OPENROUTER_API_KEY nao configurada na Function. "
+            "Defina o segredo antes de gerar exercicios."
+        )
     headers = {
         "Authorization": f"Bearer {settings.openrouter_api_key}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://pygame-apc.web.app",
+        "HTTP-Referer": settings.openrouter_referer(),
         "X-Title": "Pygame-APC",
     }
     

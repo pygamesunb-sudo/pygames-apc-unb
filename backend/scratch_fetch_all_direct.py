@@ -19,11 +19,16 @@ def main():
         # 2. Inicializa Firebase Admin usando o token direto
         creds = GoogleCredentials(access_token)
         
+        project_id = os.environ.get("FIREBASE_PROJECT_ID", "").strip()
+        if not project_id:
+            print("Defina FIREBASE_PROJECT_ID com o ID do novo projeto Firebase.")
+            return
+
         if not firebase_admin._apps:
             firebase_admin.initialize_app(
                 credential=creds,
                 options={
-                    "projectId": "pygames-apc"
+                    "projectId": project_id
                 }
             )
         

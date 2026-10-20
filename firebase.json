@@ -17,6 +17,9 @@
       }
     ]
   },
+  "firestore": {
+    "rules": "firestore.rules"
+  },
   "functions": {
     "source": "backend",
     "runtime": "python311",
@@ -24,7 +27,9 @@
       "venv",
       ".venv",
       "__pycache__",
-      "tests"
+      "tests",
+      ".env",
+      "firebase_credentials.json"
     ]
   }
 }

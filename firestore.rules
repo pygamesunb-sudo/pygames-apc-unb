@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // O site nao usa o SDK cliente do Firestore.
+    // Leituras e escritas passam pelo Firebase Admin SDK no FastAPI,
+    // que nao e afetado por estas regras.
+    // O cliente web fica bloqueado, inclusive o dono do documento,
+    // para impedir alteracao de pontuacao e leitura de segredos.
+
+    match /users/{userId} {
+      allow read, write: if false;
+    }
+
+    match /problems/{problemId} {
+      allow read, write: if false;
+    }
+
+    match /submissions/{submissionId} {
+      allow read, write: if false;
+    }
+
+    match /system_config/{docId} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

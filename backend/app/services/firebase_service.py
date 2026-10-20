@@ -34,10 +34,15 @@ def get_db():
                     except Exception:
                         # Fallback local sem credenciais
                         import google.auth.credentials
+                        project_id = settings.resolved_firebase_project_id()
+                        if not project_id:
+                            raise RuntimeError(
+                                "FIREBASE_PROJECT_ID ausente para o fallback local do Firestore."
+                            )
                         firebase_admin.initialize_app(
                             credential=google.auth.credentials.AnonymousCredentials(),
                             options={
-                                'projectId': settings.firebase_project_id
+                                'projectId': project_id
                             }
                         )
                         logger.info("Firebase Admin SDK inicializado com AnonymousCredentials e ID do projeto explicito.")

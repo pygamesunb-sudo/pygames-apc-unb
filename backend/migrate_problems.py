@@ -119,11 +119,16 @@ def main():
     print("Token OAuth2 autenticado! Inicializando Firebase Admin SDK...")
     
     # 2. Inicializa o Admin SDK
+    project_id = os.environ.get("FIREBASE_PROJECT_ID", "").strip()
+    if not project_id:
+        print("Defina FIREBASE_PROJECT_ID com o ID do novo projeto Firebase.")
+        return
+
     creds = GoogleCredentials(access_token)
     if not firebase_admin._apps:
         firebase_admin.initialize_app(
             credential=creds,
-            options={"projectId": "pygames-apc"}
+            options={"projectId": project_id}
         )
         
     db = firestore.client()
