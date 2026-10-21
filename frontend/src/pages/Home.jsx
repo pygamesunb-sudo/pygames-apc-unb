@@ -15,6 +15,7 @@ import {
   Cpu
 } from 'lucide-react';
 import { listProblems, saveGeminiConfig } from '../services/api';
+import HomeReadyPractice from '../features/readyExercises/components/HomeReadyPractice';
 import './Home.css';
 
 const DIFFICULTIES = [
@@ -34,7 +35,7 @@ const CATEGORIZED_SUGGESTIONS = {
  * Página inicial. O usuário escolhe o tema e a dificuldade para gerar um problema.
  * Layout atualizado para Dashboard de duas colunas com catálogo de questões interativo (cartuchos físicos).
  */
-export default function Home({ onGenerate, onSelectProblem, isLoading, hasActiveProblem, onContinue, userProfile }) {
+export default function Home({ onGenerate, onSelectProblem, isLoading, hasActiveProblem, onContinue, userProfile, onOpenReady, onOpenReadyCatalog }) {
   const [topic, setTopic] = useState('');
   const [difficulty, setDifficulty] = useState('facil');
   const [previousProblems, setPreviousProblems] = useState([]);
@@ -476,6 +477,8 @@ export default function Home({ onGenerate, onSelectProblem, isLoading, hasActive
             </div>
           ))}
         </div>
+
+        <HomeReadyPractice onOpen={onOpenReady} onSeeAll={onOpenReadyCatalog} />
 
         {/* Recent Challenges Gallery (Question Catalog) */}
         {previousProblems.length > 0 && (

@@ -10,6 +10,8 @@ class Settings(BaseSettings):
 
     openrouter_api_key: str = ""
     openrouter_model: str = "nvidia/nemotron-3-super-120b-a12b:free"
+    tutor_model: str = ""
+    tutor_daily_limit: int = 40
     fb_credentials_path: str = "./firebase_credentials.json"
     firebase_project_id: str = "pygamesapcprojeto"
     cors_origins: str = ""
@@ -17,6 +19,14 @@ class Settings(BaseSettings):
     api_host: str = "0.0.0.0"
     api_port: int = 8000
     testing_bypass_auth: bool = False
+    beecrowd_api_base_url: str = "https://api.beecrowd.com.br"
+    beecrowd_api_email: str = ""
+    beecrowd_api_password: str = ""
+    beecrowd_api_token: str = ""
+    beecrowd_cache_ttl: int = 86400
+
+    def beecrowd_configured(self) -> bool:
+        return bool((self.beecrowd_api_email or "").strip() and (self.beecrowd_api_password or "").strip())
 
     def resolved_firebase_project_id(self) -> str:
         """ID do projeto atual. Em Cloud Functions o GCP injeta GCLOUD_PROJECT."""

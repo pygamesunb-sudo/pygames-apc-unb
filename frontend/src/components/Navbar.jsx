@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Trophy, History, LogOut, BookOpen, Code2 } from 'lucide-react';
+import { Sparkles, Trophy, History, LogOut, BookOpen, Code2, Bot, Library } from 'lucide-react';
 import './Navbar.css';
 
 
@@ -90,6 +90,25 @@ export default function Navbar({
             </button>
 
             {/* Nova Rota: Documentação Interativa de API */}
+            <button
+              className={`btn-secondary ${view === VIEW.TUTORS ? 'btn-active' : ''}`}
+              style={{ padding: '8px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+              onClick={() => handleNavClick(VIEW.TUTORS)}
+            >
+              <Bot size={14} style={{ color: '#22d3ee' }} />
+              Tutores
+            </button>
+
+            <button
+              className={`btn-secondary ${view === VIEW.READY ? 'btn-active' : ''}`}
+              style={{ padding: '8px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+              onClick={() => handleNavClick(VIEW.READY)}
+              aria-label="Exercícios Prontos"
+            >
+              <Library size={14} style={{ color: '#a78bfa' }} />
+              Exercícios Prontos
+            </button>
+
             <button
               className={`btn-secondary ${view === VIEW.DOCS ? 'btn-active' : ''}`}
               style={{ padding: '8px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}

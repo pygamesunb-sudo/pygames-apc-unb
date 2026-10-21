@@ -1,0 +1,56 @@
+.beecrowd-page {
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.beecrowd-status,
+.beecrowd-card,
+.beecrowd-filters {
+  border: 1px solid rgba(139, 92, 246, 0.28);
+  border-radius: 16px;
+  background: rgba(8, 8, 20, 0.72);
+  padding: 16px;
+}
+
+.beecrowd-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.beecrowd-filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+}
+
+.beecrowd-filters input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.beecrowd-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.beecrowd-card__meta,
+.beecrowd-card__topics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0;
+  margin: 8px 0;
+  list-style: none;
+}
+
+.beecrowd-error {
+  color: #fecaca;
+}

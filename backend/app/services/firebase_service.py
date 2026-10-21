@@ -12,6 +12,56 @@ _in_memory_db = {}
 _use_local_fallback = False
 
 
+class _PublicKeyCredential(credentials.Base):
+    """Verifica ID token com as chaves publicas do Firebase, sem conta de servico."""
+
+    def get_credential(self):
+        import google.auth.credentials
+        return google.auth.credentials.AnonymousCredentials()
+
+
+def _adc_available() -> bool:
+    """Producao tem o metadata server. Localmente so conta um arquivo ADC de verdade."""
+    cred_file = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "").strip()
+    if cred_file and os.path.exists(cred_file):
+        return True
+    if os.getenv("K_SERVICE") or os.getenv("FUNCTION_TARGET") or os.getenv("FUNCTION_NAME"):
+        return True
+    candidates = []
+    appdata = os.getenv("APPDATA")
+    if appdata:
+        candidates.append(os.path.join(appdata, "gcloud", "application_default_credentials.json"))
+    candidates.append(
+        os.path.join(os.path.expanduser("~"), ".config", "gcloud", "application_default_credentials.json")
+    )
+    return any(os.path.exists(path) for path in candidates)
+
+
+def ensure_firebase_app() -> None:
+    """Inicializa o Admin SDK com o projeto atual.
+
+    Sem credencial local, nao usa Application Default: essa busca espera o
+    metadata server e deixa a tela de conversa carregando ate falhar.
+    """
+    if firebase_admin._apps:
+        return
+    project_id = settings.resolved_firebase_project_id()
+    if not project_id:
+        raise RuntimeError("FIREBASE_PROJECT_ID ausente.")
+    options = {"projectId": project_id}
+    cred_path = settings.fb_credentials_path
+    if os.path.exists(cred_path):
+        firebase_admin.initialize_app(credentials.Certificate(cred_path), options)
+        logger.info("Firebase Admin SDK inicializado com credenciais do arquivo.")
+        return
+    if _adc_available():
+        firebase_admin.initialize_app(options=options)
+        logger.info("Firebase Admin SDK inicializado com credenciais padrao de producao.")
+        return
+    firebase_admin.initialize_app(_PublicKeyCredential(), options)
+    logger.info("Firebase Admin SDK inicializado so para verificar ID token.")
+
+
 def get_db():
     """Retorna a instancia do Firestore, inicializando o Firebase Admin SDK se necessario."""
     global _db, _use_local_fallback
@@ -20,32 +70,10 @@ def get_db():
 
     if _db is None:
         try:
-            if not firebase_admin._apps:
-                cred_path = settings.fb_credentials_path
-                if os.path.exists(cred_path):
-                    cred = credentials.Certificate(cred_path)
-                    firebase_admin.initialize_app(cred)
-                    logger.info("Firebase Admin SDK inicializado com credenciais do arquivo.")
-                else:
-                    try:
-                        # Tenta usar as credenciais padrão do GCP/Firebase (produção)
-                        firebase_admin.initialize_app()
-                        logger.info("Firebase Admin SDK inicializado com credenciais padrao de producao.")
-                    except Exception:
-                        # Fallback local sem credenciais
-                        import google.auth.credentials
-                        project_id = settings.resolved_firebase_project_id()
-                        if not project_id:
-                            raise RuntimeError(
-                                "FIREBASE_PROJECT_ID ausente para o fallback local do Firestore."
-                            )
-                        firebase_admin.initialize_app(
-                            credential=google.auth.credentials.AnonymousCredentials(),
-                            options={
-                                'projectId': project_id
-                            }
-                        )
-                        logger.info("Firebase Admin SDK inicializado com AnonymousCredentials e ID do projeto explicito.")
+            ensure_firebase_app()
+            cred_path = settings.fb_credentials_path
+            if not os.path.exists(cred_path) and not _adc_available():
+                raise RuntimeError("Firestore local sem credencial; usando memoria.")
             _db = firestore.client()
         except Exception as e:
             logger.warning(

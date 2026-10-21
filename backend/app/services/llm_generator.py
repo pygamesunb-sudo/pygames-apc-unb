@@ -3,12 +3,10 @@ import json
 import random
 import logging
 
-from app.config import settings
 from app.models.schemas import GeneratedProblem, TestCase
+from app.services.ai.client import chat_completion
 
 logger = logging.getLogger(__name__)
-
-OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 GENERATOR_SYSTEM_PROMPT = """Você é um professor altamente experiente e criativo de programação Python.
 Sua missão é criar problemas engajantes baseados estritamente no tema de interesse fornecido pelo usuário.
@@ -98,112 +96,18 @@ async def _call_gemini_api(messages: list[dict], api_key: str, temperature: floa
 
 async def _call_llm(messages: list[dict], temperature: float = 0.7) -> str:
     """Realiza uma chamada a API do OpenRouter e retorna o conteudo da resposta."""
-    import asyncio
-    if not (settings.openrouter_api_key or "").strip():
-        raise RuntimeError(
+    return await chat_completion(
+        messages,
+        temperature=temperature,
+        timeout=300.0,
+        use_generation_fallbacks=True,
+        missing_key_message=(
             "OPENROUTER_API_KEY nao configurada na Function. "
             "Defina o segredo antes de gerar exercicios."
-        )
-    headers = {
-        "Authorization": f"Bearer {settings.openrouter_api_key}",
-        "Content-Type": "application/json",
-        "HTTP-Referer": settings.openrouter_referer(),
-        "X-Title": "Pygame-APC",
-    }
-    
-    # Lista de modelos para tentar em caso de falha (404, 429 ou erro de modelo inválido)
-    models_to_try = [settings.openrouter_model]
-    
-    # Adiciona fallbacks caso o principal não seja openrouter/free
-    if settings.openrouter_model != "openrouter/free":
-        models_to_try.append("openrouter/free")
-        
-    fallback_list = [
-        "openai/gpt-oss-120b:free",
-        "nvidia/nemotron-3-super-120b-a12b:free",
-        "meta-llama/llama-3.3-70b-instruct:free",
-        "meta-llama/llama-3.2-3b-instruct:free"
-    ]
-    for model in fallback_list:
-        if model not in models_to_try:
-            models_to_try.append(model)
-            
-    last_exception = None
-    
-    for model in models_to_try:
-        logger.info("Tentando chamada a LLM com o modelo: %s", model)
-        payload = {
-            "model": model,
-            "messages": messages,
-            "temperature": temperature,
-        }
-        
-        max_retries = 3
-        backoff_factor = 2.0
-        
-        for attempt in range(max_retries):
-            try:
-                async with httpx.AsyncClient(timeout=300.0) as client:
-                    response = await client.post(OPENROUTER_API_URL, headers=headers, json=payload)
-                    
-                    # Se receber status de limite de requisicoes (429), tenta novamente com backoff
-                    if response.status_code == 429:
-                        if attempt < max_retries - 1:
-                            sleep_time = backoff_factor * (2 ** attempt) + random.uniform(0.1, 0.5)
-                            logger.warning(
-                                "Modelo %s retornou 429 (Too Many Requests). Nova tentativa em %.2fs... (%d/%d)",
-                                model, sleep_time, attempt + 1, max_retries
-                            )
-                            await asyncio.sleep(sleep_time)
-                            continue
-                            
-                    response.raise_for_status()
-                    data = response.json()
-                    
-                    if "error" in data:
-                        error_data = data["error"]
-                        error_msg = error_data.get("message", "Erro desconhecido retornado pelo OpenRouter.")
-                        error_code = error_data.get("code")
-                        
-                        # Verifica se o erro da API do OpenRouter e um 429
-                        if error_code == 429 or "429" in error_msg:
-                            if attempt < max_retries - 1:
-                                sleep_time = backoff_factor * (2 ** attempt) + random.uniform(0.1, 0.5)
-                                logger.warning(
-                                    "OpenRouter reportou erro 429 para o modelo %s. Nova tentativa em %.2fs... (%d/%d)",
-                                    model, sleep_time, attempt + 1, max_retries
-                                )
-                                await asyncio.sleep(sleep_time)
-                                continue
-                                
-                        logger.error("Erro retornado pelo OpenRouter para o modelo %s: %s", model, error_data)
-                        raise ValueError(f"OpenRouter ({model}): {error_msg}")
-                        
-                    if "choices" not in data or not data["choices"]:
-                        logger.error("Resposta inesperada da API OpenRouter para o modelo %s: %s", model, data)
-                        raise ValueError(f"OpenRouter ({model}): A resposta nao contem opcoes validas ('choices').")
-                        
-                    logger.info("Chamada a LLM concluida com sucesso usando o modelo: %s", model)
-                    return data["choices"][0]["message"]["content"]
-                    
-            except (httpx.HTTPStatusError, httpx.RequestError, ValueError) as e:
-                # Se for um erro HTTPStatusError e for 429, ja foi tratado acima.
-                # Para outros erros ou se as tentativas esgotaram, trata a excecao.
-                if isinstance(e, httpx.HTTPStatusError) and e.response.status_code == 429:
-                    if attempt < max_retries - 1:
-                        sleep_time = backoff_factor * (2 ** attempt) + random.uniform(0.1, 0.5)
-                        logger.warning(
-                            "Capturado HTTPStatusError 429 para %s. Nova tentativa em %.2fs... (%d/%d)",
-                            model, sleep_time, attempt + 1, max_retries
-                        )
-                        await asyncio.sleep(sleep_time)
-                        continue
-                
-                logger.warning("Falha na tentativa %d para o modelo %s: %s", attempt + 1, model, e)
-                last_exception = e
-                break  # Sai do loop de retentativas para tentar o proximo modelo
-            
-    raise ValueError(f"Todos os modelos da API do OpenRouter falharam. Ultimo erro: {last_exception}")
+        ),
+        failure_message="Todos os modelos da API do OpenRouter falharam.",
+        log_label="Gerador",
+    )
 
 
 def _parse_problem_json(raw: str) -> dict:

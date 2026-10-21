@@ -1,5 +1,5 @@
 import React from 'react';
-import { Code, Sparkles, Trophy, History, LogOut, BookOpen } from 'lucide-react';
+import { Code, Sparkles, Trophy, History, LogOut, BookOpen, Bot, Library } from 'lucide-react';
 import './BottomNav.css';
 
 
@@ -50,6 +50,23 @@ export default function BottomNav({
       >
         <History size={20} style={{ color: '#ec4899' }} />
         <span>Historico</span>
+      </button>
+
+      <button
+        className={`bottom-nav-item ${view === VIEW.TUTORS ? 'bottom-nav-item--active' : ''}`}
+        onClick={() => handleNavClick(VIEW.TUTORS)}
+      >
+        <Bot size={20} style={{ color: '#22d3ee' }} />
+        <span>Tutores</span>
+      </button>
+
+      <button
+        className={`bottom-nav-item ${view === VIEW.READY ? 'bottom-nav-item--active' : ''}`}
+        onClick={() => handleNavClick(VIEW.READY)}
+        aria-label="Exercícios Prontos"
+      >
+        <Library size={20} style={{ color: '#a78bfa' }} />
+        <span>Prontos</span>
       </button>
 
       {/* Docs Mobile Link */}
