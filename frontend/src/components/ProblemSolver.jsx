@@ -219,15 +219,31 @@ const formatDescription = (text) => {
 };
 
 /* ---------------------- Componente Principal --------------------- */
-export default function ProblemSolver({ problem, onSubmit, isSubmitting, result, validationStatus, isGenerating }) {
+export default function ProblemSolver({ problem, onSubmit, isSubmitting, result, validationStatus, isGenerating, onDraftChange }) {
   console.log("ProblemSolver render: description length =", problem?.description?.length, "title =", problem?.title);
   const [activeMode, setActiveMode] = useState('free-typing');
   const [code, setCode] = useState('');
+
+  const publishCode = (value) => {
+    const next = value || '';
+    setCode(next);
+    onDraftChange?.(next);
+  };
+
+  useEffect(() => {
+    setCode('');
+    onDraftChange?.('');
+    if (problem?.ready_exercise) setActiveMode('free-typing');
+  }, [problem?.problem_id]);
 
   const handleSubmit = () => {
     if (!code.trim() || isSubmitting || isGenerating || validationStatus === 'validating' || validationStatus === 'reviewing') return;
     onSubmit(code);
   };
+
+  const modes = problem?.ready_exercise
+    ? MODES.filter((mode) => mode.id !== 'blocks-assembled')
+    : MODES;
 
   return (
     <div className="solver-container animate-fade-in">
@@ -251,6 +267,17 @@ export default function ProblemSolver({ problem, onSubmit, isSubmitting, result,
           {formatDescription(problem.description)}
           {isGenerating && <span className="animate-pulse" style={{ display: 'inline-block', width: '8px', height: '1.2em', background: 'var(--accent-primary)', marginLeft: '4px', verticalAlign: 'middle' }} />}
         </div>
+        {problem.ready_exercise && typeof problem.external_url === 'string' && problem.external_url.startsWith('https://') && (
+          <a
+            href={problem.external_url}
+            target="_blank"
+            rel="noreferrer"
+            className="btn-secondary"
+            style={{ marginTop: 12, display: 'inline-flex' }}
+          >
+            Abrir o enunciado na fonte
+          </a>
+        )}
         
         {/* Renderiza tabela de exemplos dinamica apenas se o enunciado NAO tiver exemplos textuais */}
         {!/exemplo|entrada|saída/i.test(problem.description) && problem.test_cases?.length > 0 && (
@@ -292,7 +319,7 @@ export default function ProblemSolver({ problem, onSubmit, isSubmitting, result,
 
       {/* Seletor de modo */}
       <div className="mode-tabs">
-        {MODES.map(({ id, label, icon: Icon }) => (
+        {modes.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             className={`mode-tab ${activeMode === id ? 'mode-tab--active' : ''}`}
@@ -310,14 +337,14 @@ export default function ProblemSolver({ problem, onSubmit, isSubmitting, result,
           <BlocksAssembledMode
             key={problem.problem_id}
             blocks={problem.solution_blocks || []}
-            onCodeChange={setCode}
+            onCodeChange={publishCode}
           />
         )}
         {activeMode === 'blocks-free' && (
-          <BlocksFreeMode onCodeChange={setCode} />
+          <BlocksFreeMode onCodeChange={publishCode} />
         )}
         {activeMode === 'free-typing' && (
-          <FreeTypingMode onCodeChange={setCode} />
+          <FreeTypingMode key={problem.problem_id} onCodeChange={publishCode} />
         )}
       </div>
 
@@ -327,11 +354,22 @@ export default function ProblemSolver({ problem, onSubmit, isSubmitting, result,
         onClick={handleSubmit}
         disabled={isSubmitting || !code.trim() || isGenerating || validationStatus === 'validating' || validationStatus === 'reviewing'}
       >
-        {isSubmitting ? <><span className="spinner" /> Avaliando...</> : 'Submeter Solucao'}
+        {problem.ready_exercise
+          ? (isSubmitting ? 'Registrando...' : 'Registrar prática')
+          : (isSubmitting ? <><span className="spinner" /> Avaliando...</> : 'Submeter Solucao')}
       </button>
 
       {/* Resultado */}
-      {result && (
+      {result?.ready_practice && (
+        <div className="result-panel card mt-4 result-panel--success" role="status">
+          <div className="result-header">
+            <span className="result-label text-success">Prática registrada</span>
+          </div>
+          <p style={{ margin: '12px 0 0' }}>{result.message}</p>
+        </div>
+      )}
+
+      {result && !result.ready_practice && (
         <div className={`result-panel card mt-4 ${result.all_passed ? 'result-panel--success' : 'result-panel--partial'}`}>
           <div className="result-header">
             <span className="result-score">{result.score}/100</span>

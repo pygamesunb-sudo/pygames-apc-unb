@@ -6,17 +6,21 @@ import './Exercise.css';
 /**
  * Tela de resolucao do problema gerado.
  */
-export default function Exercise({ problem, onSubmit, isSubmitting, result, onBack, validationStatus, isGenerating }) {
+export default function Exercise({ problem, onSubmit, isSubmitting, result, onBack, validationStatus, isGenerating, onDraftChange }) {
   return (
     <div className="exercise-container animate-fade-in">
       <div className="exercise-header">
         <button className="btn-secondary" onClick={onBack} id="back-btn">
           <ArrowLeft size={16} />
-          Novo Problema
+          {problem.ready_exercise ? 'Voltar aos exercícios' : 'Novo Problema'}
         </button>
         <div className="flex items-center gap-3">
           <span className="text-muted" style={{ fontSize: '0.85rem' }}>
-            ID: <code className="font-mono text-secondary">{problem.problem_id || 'Gerando...'}</code>
+            {problem.ready_exercise ? (
+              <>Fonte: {problem.source_label || 'Pygames'} • <code className="font-mono text-secondary">#{problem.external_id}</code></>
+            ) : (
+              <>ID: <code className="font-mono text-secondary">{problem.problem_id || 'Gerando...'}</code></>
+            )}
           </span>
         </div>
       </div>
@@ -27,6 +31,7 @@ export default function Exercise({ problem, onSubmit, isSubmitting, result, onBa
         result={result}
         validationStatus={validationStatus}
         isGenerating={isGenerating}
+        onDraftChange={onDraftChange}
       />
     </div>
   );

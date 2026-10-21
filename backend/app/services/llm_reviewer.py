@@ -6,11 +6,9 @@ import json
 import logging
 import httpx
 
-from app.config import settings
+from app.services.ai.client import chat_completion
 
 logger = logging.getLogger(__name__)
-
-OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 REVIEWER_SYSTEM_PROMPT = """Você é um revisor e corretor especialista de desafios de programação em Python.
 Sua missão é garantir que o desafio seja perfeito, didático e esteja 100% livre de erros antes de ser entregue.
@@ -198,120 +196,32 @@ async def _call_reviewer_gemini_api(messages: list[dict], api_key: str) -> dict:
             raise ValueError("A LLM do Gemini no revisor nao retornou um JSON valido.")
 
 
+def _parse_review_json(raw: str) -> dict:
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        start = raw.find("{")
+        end = raw.rfind("}") + 1
+        if start != -1 and end > start:
+            return json.loads(raw[start:end])
+        raise ValueError("A LLM do revisor nao retornou um JSON valido.")
+
+
 async def _call_reviewer_llm(messages: list[dict]) -> dict:
     """Chama a LLM do revisor e parseia a resposta JSON com fallback robusto."""
-    import asyncio
-    import random
-    if not (settings.openrouter_api_key or "").strip():
-        raise RuntimeError(
+    return await chat_completion(
+        messages,
+        temperature=0.3,
+        timeout=120.0,
+        use_generation_fallbacks=True,
+        missing_key_message=(
             "OPENROUTER_API_KEY nao configurada na Function. "
             "Defina o segredo antes de revisar exercicios."
-        )
-    headers = {
-        "Authorization": f"Bearer {settings.openrouter_api_key}",
-        "Content-Type": "application/json",
-        "HTTP-Referer": settings.openrouter_referer(),
-        "X-Title": "Pygame-APC",
-    }
-    
-    models_to_try = [settings.openrouter_model]
-    if settings.openrouter_model != "openrouter/free":
-        models_to_try.append("openrouter/free")
-        
-    fallback_list = [
-        "openai/gpt-oss-120b:free",
-        "nvidia/nemotron-3-super-120b-a12b:free",
-        "meta-llama/llama-3.3-70b-instruct:free",
-        "meta-llama/llama-3.2-3b-instruct:free"
-    ]
-    for model in fallback_list:
-        if model not in models_to_try:
-            models_to_try.append(model)
-            
-    last_exception = None
-    
-    for model in models_to_try:
-        logger.info("Revisor tentando chamada a LLM com o modelo: %s", model)
-        payload = {
-            "model": model,
-            "messages": messages,
-            "temperature": 0.3,
-        }
-        
-        max_retries = 3
-        backoff_factor = 2.0
-        
-        for attempt in range(max_retries):
-            try:
-                async with httpx.AsyncClient(timeout=120.0) as client:
-                    response = await client.post(OPENROUTER_API_URL, headers=headers, json=payload)
-                    
-                    # Se receber status de limite de requisicoes (429), tenta novamente com backoff
-                    if response.status_code == 429:
-                        if attempt < max_retries - 1:
-                            sleep_time = backoff_factor * (2 ** attempt) + random.uniform(0.1, 0.5)
-                            logger.warning(
-                                "Revisor: Modelo %s retornou 429 (Too Many Requests). Nova tentativa em %.2fs... (%d/%d)",
-                                model, sleep_time, attempt + 1, max_retries
-                            )
-                            await asyncio.sleep(sleep_time)
-                            continue
-                            
-                    response.raise_for_status()
-                    data = response.json()
-                    
-                    if "error" in data:
-                        error_data = data["error"]
-                        error_msg = error_data.get("message", "Erro desconhecido retornado pelo OpenRouter no Revisor.")
-                        error_code = error_data.get("code")
-                        
-                        # Verifica se o erro da API do OpenRouter e um 429
-                        if error_code == 429 or "429" in error_msg:
-                            if attempt < max_retries - 1:
-                                sleep_time = backoff_factor * (2 ** attempt) + random.uniform(0.1, 0.5)
-                                logger.warning(
-                                    "Revisor: OpenRouter reportou erro 429 para o modelo %s. Nova tentativa em %.2fs... (%d/%d)",
-                                    model, sleep_time, attempt + 1, max_retries
-                                )
-                                await asyncio.sleep(sleep_time)
-                                continue
-                                
-                        logger.error("Erro retornado pelo OpenRouter no Revisor para o modelo %s: %s", model, error_data)
-                        raise ValueError(f"OpenRouter Revisor ({model}): {error_msg}")
-                        
-                    if "choices" not in data or not data["choices"]:
-                        logger.error("Resposta inesperada no Revisor para o modelo %s: %s", model, data)
-                        raise ValueError(f"OpenRouter Revisor ({model}): O revisor nao retornou opcoes validas ('choices').")
-                        
-                    raw = data["choices"][0]["message"]["content"]
-                    
-                    try:
-                        return json.loads(raw)
-                    except json.JSONDecodeError:
-                        start = raw.find("{")
-                        end = raw.rfind("}") + 1
-                        if start != -1 and end > start:
-                            return json.loads(raw[start:end])
-                        raise ValueError("A LLM do revisor nao retornou um JSON valido.")
-                        
-            except (httpx.HTTPStatusError, httpx.RequestError, ValueError) as e:
-                # Se for um erro HTTPStatusError e for 429, ja foi tratado acima.
-                # Para outros erros ou se as tentativas esgotaram, trata a excecao.
-                if isinstance(e, httpx.HTTPStatusError) and e.response.status_code == 429:
-                    if attempt < max_retries - 1:
-                        sleep_time = backoff_factor * (2 ** attempt) + random.uniform(0.1, 0.5)
-                        logger.warning(
-                            "Revisor: Capturado HTTPStatusError 429 para %s. Nova tentativa em %.2fs... (%d/%d)",
-                            model, sleep_time, attempt + 1, max_retries
-                        )
-                        await asyncio.sleep(sleep_time)
-                        continue
-                
-                logger.warning("Revisor: Falha na tentativa %d para o modelo %s: %s", attempt + 1, model, e)
-                last_exception = e
-                break  # Sai do loop de retentativas para tentar o proximo modelo
-            
-    raise ValueError(f"Todos os modelos do Revisor da API do OpenRouter falharam. Ultimo erro: {last_exception}")
+        ),
+        failure_message="Todos os modelos do Revisor da API do OpenRouter falharam.",
+        log_label="Revisor",
+        parse=_parse_review_json,
+    )
 
 
 async def review_problem(

@@ -22,6 +22,11 @@ import LandingPage from './components/LandingPage';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import LoadingView from './components/LoadingView';
+import Tutors from './features/tutors/pages/Tutors';
+import FloatingTutor from './features/tutors/components/FloatingTutor';
+import ReadyExercises from './features/readyExercises/pages/ReadyExercises';
+import { markReadyExerciseProgress } from './features/readyExercises/services/readyExercisesApi';
+import { toPracticeProblem } from './features/readyExercises/readyExercisesModel';
 
 
 import { generateProblemStream, generateProblem, validateProblem, reviewProblem, submitCode, getUserProfile } from './services/api';
@@ -36,12 +41,15 @@ const VIEW = {
   MINIGAME: 'minigame',
   LEADERBOARD: 'leaderboard',
   HISTORY: 'history',
-  DOCS: 'docs'
+  DOCS: 'docs',
+  TUTORS: 'tutors',
+  READY: 'exercicios-prontos'
 };
 
 export default function App() {
   const [view, setView] = useState(() => {
     const hash = window.location.hash.replace('#', '');
+    if (hash === 'beecrowd') return VIEW.READY;
     if (Object.values(VIEW).includes(hash)) {
       if (hash === VIEW.EXERCISE || hash === VIEW.LOADING) {
         return VIEW.HOME;
@@ -60,6 +68,7 @@ export default function App() {
   const [phase, setPhase] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
+  const [exerciseCode, setExerciseCode] = useState('');
 
   // Sincroniza hash da URL somente quando o usuario estiver logado
   useEffect(() => {
@@ -76,6 +85,11 @@ export default function App() {
 
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '');
+      if (hash === 'beecrowd') {
+        setView(VIEW.READY);
+        window.location.hash = VIEW.READY;
+        return;
+      }
       if (Object.values(VIEW).includes(hash)) {
         if ((hash === VIEW.EXERCISE || hash === VIEW.LOADING) && !problem) {
           setView(VIEW.HOME);
@@ -261,6 +275,22 @@ export default function App() {
 
   const handleSubmit = async (code) => {
     if (!problem) return;
+    if (problem.ready_exercise) {
+      setIsSubmitting(true);
+      setResult(null);
+      try {
+        await markReadyExerciseProgress(problem.problem_id, 'completed');
+        setResult({
+          ready_practice: true,
+          message: 'Prática registrada. Isso fica no seu progresso e não entra no ranking.',
+        });
+      } catch (err) {
+        setError('Não conseguimos registrar a prática agora.');
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
     setIsSubmitting(true);
     setResult(null);
     try {
@@ -301,6 +331,32 @@ export default function App() {
     setResult(null);
     setProblem(selected);
     setView(VIEW.EXERCISE);
+  };
+
+  const handleOpenReady = (exercise) => {
+    setError(null);
+    setResult(null);
+    setValidationStatus('');
+    setIsProblemReady(false);
+    setIsGenerating(false);
+    setProblem(toPracticeProblem(exercise));
+    setView(VIEW.EXERCISE);
+    markReadyExerciseProgress(exercise.id, 'started').catch(() => {});
+  };
+
+  const handleBackToReady = () => {
+    setProblem(null);
+    setResult(null);
+    setError(null);
+    setIsProblemReady(false);
+    setValidationStatus('');
+    setView(VIEW.READY);
+  };
+
+  const handleOpenReadyCatalog = () => {
+    setError(null);
+    setResult(null);
+    setView(VIEW.READY);
   };
 
   // Render da Landing Page (login obrigatório)
@@ -351,6 +407,8 @@ export default function App() {
               onSelectProblem={handleSelectProblem} 
               isLoading={isGenerating} 
               userProfile={userProfile}
+              onOpenReady={handleOpenReady}
+              onOpenReadyCatalog={handleOpenReadyCatalog}
             />
           )}
 
@@ -372,10 +430,19 @@ export default function App() {
               onSubmit={handleSubmit}
               isSubmitting={isSubmitting}
               result={result}
-              onBack={handleBack}
+              onBack={problem.ready_exercise ? handleBackToReady : handleBack}
               validationStatus={validationStatus}
               isGenerating={isGenerating}
+              onDraftChange={setExerciseCode}
             />
+          )}
+
+          {view === VIEW.TUTORS && (
+            <Tutors />
+          )}
+
+          {view === VIEW.READY && (
+            <ReadyExercises onOpen={handleOpenReady} />
           )}
 
           {view === VIEW.MINIGAME && (
@@ -424,6 +491,12 @@ export default function App() {
           <p>Pygame-APC &mdash; Problemas gerados por IA, revisados por pares LLM.</p>
         </div>
       </footer>
+
+      <FloatingTutor
+        problemId={view === VIEW.EXERCISE ? problem?.problem_id : null}
+        code={view === VIEW.EXERCISE ? exerciseCode : null}
+        raised={(isGenerating && view !== VIEW.LOADING) || (isProblemReady && view !== VIEW.EXERCISE && view !== VIEW.LOADING)}
+      />
 
       {/* Floating Action Button (FAB) de Progresso da IA */}
       {((isGenerating && view !== VIEW.LOADING) || (isProblemReady && view !== VIEW.EXERCISE && view !== VIEW.LOADING)) && (

@@ -23,6 +23,34 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    match /tutor_conversations/{conversationId} {
+      allow read, write: if false;
+
+      match /messages/{messageId} {
+        allow read, write: if false;
+      }
+    }
+
+    match /tutor_usage/{userId} {
+      allow read, write: if false;
+    }
+
+    match /beecrowd_cache/{docId} {
+      allow read, write: if false;
+    }
+
+    match /beecrowd_session/{docId} {
+      allow read, write: if false;
+    }
+
+    match /ready_exercises_cache/{docId} {
+      allow read, write: if false;
+    }
+
+    match /ready_exercise_progress/{userId} {
+      allow read, write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

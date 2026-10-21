@@ -13,9 +13,8 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     """
     token = credentials.credentials
     import os
-    import firebase_admin
-    from firebase_admin import credentials as fb_credentials
     from app.config import settings
+    from app.services.firebase_service import ensure_firebase_app
     # Suporte a E2E testing bypass local e seguro
     if token == "mock-testing-token-apc" and (os.getenv("TESTING_BYPASS_AUTH") == "true" or settings.testing_bypass_auth):
         return {
@@ -24,32 +23,10 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             "name": "Jogador de Testes"
         }
 
-    # Certifica que o SDK está inicializado antes de chamar verify_id_token
-    if not firebase_admin._apps:
-        try:
-            if os.path.exists(settings.fb_credentials_path):
-                cred = fb_credentials.Certificate(settings.fb_credentials_path)
-                firebase_admin.initialize_app(cred)
-            else:
-                try:
-                    # Tenta usar as credenciais padrão do GCP/Firebase (produção)
-                    firebase_admin.initialize_app()
-                except Exception:
-                    # Fallback local sem credenciais
-                    import google.auth.credentials
-                    project_id = settings.resolved_firebase_project_id()
-                    if not project_id:
-                        raise RuntimeError(
-                            "FIREBASE_PROJECT_ID ausente para verificar o token Firebase."
-                        )
-                    firebase_admin.initialize_app(
-                        credential=google.auth.credentials.AnonymousCredentials(),
-                        options={
-                            'projectId': project_id
-                        }
-                    )
-        except Exception as e:
-            logger.warning("Falha ao inicializar o Firebase Admin SDK no middleware de auth: %s", e)
+    try:
+        ensure_firebase_app()
+    except Exception as e:
+        logger.warning("Falha ao inicializar o Firebase Admin SDK no middleware de auth: %s", e)
 
     try:
         # Verifica o token com o Firebase Admin SDK
