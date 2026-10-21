@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Bug, Code2, GraduationCap, ListChecks } from 'lucide-react';
+import { Brain, Bug, Code2, GraduationCap, ListChecks } from 'lucide-react';
 import TutorCard from '../components/TutorCard';
 import TutorChat from '../components/TutorChat';
+import TutorExerciseGenerator from '../components/TutorExerciseGenerator';
 import '../tutors.css';
 
 const TUTORS = [
@@ -33,6 +34,13 @@ const TUTORS = [
     icon: ListChecks,
     color: '#10b981',
   },
+  {
+    mode: 'exercise',
+    title: 'Tutor de Exercícios',
+    description: 'Pratique programação com exercícios gerados especialmente para você.',
+    icon: Brain,
+    color: '#c4b5fd',
+  },
 ];
 
 export default function Tutors() {
@@ -40,7 +48,13 @@ export default function Tutors() {
 
   return (
     <div className="tutors-page animate-fade-in">
-      {selected ? (
+      {selected?.mode === 'exercise' ? (
+        <TutorExerciseGenerator
+          title={selected.title}
+          description={selected.description}
+          onBack={() => setSelected(null)}
+        />
+      ) : selected ? (
         <TutorChat
           key={selected.mode}
           mode={selected.mode}

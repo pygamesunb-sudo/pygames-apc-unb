@@ -8,6 +8,7 @@ from firebase_functions.params import SecretParam
 
 # Valor fica no Secret Manager. Nao entra no codigo, no Git nem no frontend.
 OPENROUTER_API_KEY = SecretParam("OPENROUTER_API_KEY")
+GEMINI_API_KEY = SecretParam("GEMINI_API_KEY")
 
 # Ensure the backend directory is in the system path so imports work correctly
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
@@ -89,7 +90,7 @@ async def run_asgi(asgi_app, req: https_fn.Request) -> https_fn.Response:
     timeout_sec=300,
     memory=MemoryOption.MB_512,
     invoker="public",
-    secrets=[OPENROUTER_API_KEY],
+    secrets=[OPENROUTER_API_KEY, GEMINI_API_KEY],
 )
 def api(req: https_fn.Request) -> https_fn.Response:
     try:

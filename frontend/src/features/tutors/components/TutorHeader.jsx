@@ -23,15 +23,17 @@ export default function TutorHeader({
           {description && <p>{description}</p>}
         </div>
         <div className="tutor-header__actions">
-          <button
-            type="button"
-            className="btn-secondary tutor-header__icon-btn"
-            onClick={onNewConversation}
-            disabled={newConversationDisabled}
-          >
-            <Plus size={16} aria-hidden="true" />
-            Nova conversa
-          </button>
+          {onNewConversation && (
+            <button
+              type="button"
+              className="btn-secondary tutor-header__icon-btn"
+              onClick={onNewConversation}
+              disabled={newConversationDisabled}
+            >
+              <Plus size={16} aria-hidden="true" />
+              Nova conversa
+            </button>
+          )}
           {onClose && (
             <button
               type="button"

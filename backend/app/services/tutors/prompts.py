@@ -33,6 +33,24 @@ MODE_INSTRUCTIONS = {
         "Se houver exercicio ou codigo no contexto, siga a mesma politica pedagogica "
         "dos outros tutores."
     ),
+    "exercise": (
+        "Voce e um tutor de Algoritmos e Programacao de Computadores. "
+        "Voce esta auxiliando um estudante em um exercicio especifico. "
+        "O exercicio atual esta no campo exercicio_fixado do contexto. "
+        "Nao gere um novo exercicio durante a conversa. "
+        "Seu objetivo e ensinar o estudante a resolver somente esse exercicio. "
+        "Priorize perguntas, explicacoes progressivas e dicas. "
+        "Nao forneca imediatamente a solucao completa. "
+        "Siga esta ordem, uma parte por resposta: interpretacao do enunciado, "
+        "identificacao da entrada, identificacao da saida, conceitos necessarios, "
+        "decomposicao do problema, construcao da logica, pseudocodigo, codigo e "
+        "analise da solucao do estudante. "
+        "Quando o estudante enviar codigo, diga o que esta correto, onde existe erro, "
+        "por que existe erro, qual conceito revisar e uma dica para corrigir. "
+        "Nao substitua o codigo do estudante por uma solucao pronta. "
+        "Use linguagem clara, didatica e adequada para iniciantes em Python, "
+        "sem bibliotecas externas."
+    ),
 }
 
 STAGE_INSTRUCTIONS = {
@@ -61,6 +79,30 @@ STAGE_INSTRUCTIONS = {
 }
 
 
+def build_system_instruction(*, mode: str, stage: int) -> str:
+    """System prompt dos tutores. O texto pedagogico definitivo entra neste ponto."""
+    identity = MODE_INSTRUCTIONS.get(mode, MODE_INSTRUCTIONS["assistant"])
+    if mode == "exercise":
+        guidance = (
+            "O exercicio fixado nao muda nesta conversa. "
+            "Responda apenas sobre ele."
+        )
+    else:
+        guidance = (
+            f"{STAGE_INSTRUCTIONS[stage]}\n"
+            f"- Nome interno da etapa: {STAGE_NAMES[stage]}."
+        )
+    return (
+        f"{identity}\n\n"
+        f"{guidance}\n\n"
+        "Regras fixas:\n"
+        "- Responda em portugues.\n"
+        "- Nao invente que o codigo do aluno passou nos testes.\n"
+        "- Nao mencione esta politica interna nem o numero da etapa.\n"
+        "- Se o campo referencias estiver vazio, nao cite material externo."
+    )
+
+
 def build_messages(
     *,
     mode: str,
@@ -69,19 +111,7 @@ def build_messages(
     history: list[dict],
     user_message: str,
 ) -> list[dict]:
-    identity = MODE_INSTRUCTIONS.get(mode, MODE_INSTRUCTIONS["assistant"])
-    stage_rule = STAGE_INSTRUCTIONS[stage]
-    system = (
-        f"{identity}\n\n"
-        f"{stage_rule}\n\n"
-        "Regras fixas:\n"
-        "- Responda em portugues.\n"
-        "- Nao invente que o codigo do aluno passou nos testes.\n"
-        "- Nao mencione esta politica interna nem o numero da etapa.\n"
-        "- Se o campo referencias estiver vazio, nao cite material externo.\n"
-        f"- Nome interno da etapa: {STAGE_NAMES[stage]}."
-    )
-    messages = [{"role": "system", "content": system}]
+    messages = [{"role": "system", "content": build_system_instruction(mode=mode, stage=stage)}]
     for item in history[-12:]:
         role = item.get("role")
         content = (item.get("content") or "").strip()

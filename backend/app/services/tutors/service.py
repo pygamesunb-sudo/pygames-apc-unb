@@ -14,13 +14,22 @@ from app.models.tutors import (
     TutorChatResponse,
     TutorConversationDetail,
     TutorConversationSummary,
+    TutorExercise,
+    TutorExerciseRequest,
     TutorMessage,
     TutorUsageView,
 )
-from app.services.ai.client import LLMUnavailable, chat_completion
+from app.services.ai.client import LLMUnavailable
+from app.services.ai.errors import TutorAINotConfigured
+from app.services.ai.gemini_client import gemini_api_key, resolve_tutor_model
 from app.services.ai.usage import consume_daily_message
 from app.services.tutors import context as tutor_context
 from app.services.tutors import history
+from app.services.tutors.exercise import (
+    InvalidGeneratedExercise,
+    build_generator_messages,
+    parse_generated_exercise,
+)
 from app.services.tutors.policies import resolve_stage
 from app.services.tutors.prompts import build_messages
 
@@ -76,6 +85,38 @@ async def get_user_conversation(uid: str, conversation_id: str) -> TutorConversa
     return TutorConversationDetail(**detail)
 
 
+def get_tutor_provider():
+    from app.services.ai.gemini_client import GeminiProvider
+
+    return GeminiProvider()
+
+
+async def _complete(messages: list[dict]) -> str:
+    if not gemini_api_key():
+        raise TutorAINotConfigured()
+    provider = get_tutor_provider()
+    model = resolve_tutor_model()
+    logger.info("Tutor chamando provider=%s model=%s", provider.name, model)
+    return await provider.complete(
+        messages,
+        temperature=0.4,
+        model=model,
+        timeout=60.0,
+    )
+
+
+async def generate_exercise(user: dict, request: TutorExerciseRequest) -> TutorExercise:
+    uid = user.get("uid") or ""
+    await consume_daily_message(uid)
+    logger.info("Tutor gerando exercicio uid=%s topic=%s", uid, request.topic)
+    raw = await _complete(build_generator_messages(request.topic, request.difficulty))
+    try:
+        return parse_generated_exercise(raw, topic=request.topic, difficulty=request.difficulty)
+    except InvalidGeneratedExercise as exc:
+        logger.warning("Exercicio gerado pelo tutor foi recusado.")
+        raise LLMUnavailable("O tutor nao conseguiu montar um exercicio valido.") from exc
+
+
 async def chat(user: dict, request: TutorChatRequest) -> TutorChatResponse:
     uid = user.get("uid") or ""
     conversation = None
@@ -100,6 +141,8 @@ async def chat(user: dict, request: TutorChatRequest) -> TutorChatResponse:
         problem_id=problem_id,
         code=request.code,
     )
+    if request.mode == "exercise" and request.exercise is not None:
+        tutor_ctx["exercicio_fixado"] = request.exercise.model_dump()
     llm_messages = build_messages(
         mode=request.mode,
         stage=stage,
@@ -107,7 +150,6 @@ async def chat(user: dict, request: TutorChatRequest) -> TutorChatResponse:
         history=prior_messages,
         user_message=request.message,
     )
-    model = (settings.tutor_model or "").strip() or settings.openrouter_model
     logger.info(
         "Tutor uid=%s mode=%s stage=%s surface=%s",
         uid,
@@ -115,22 +157,7 @@ async def chat(user: dict, request: TutorChatRequest) -> TutorChatResponse:
         stage,
         request.surface,
     )
-    reply = await chat_completion(
-        llm_messages,
-        temperature=0.4,
-        timeout=60.0,
-        models=[model],
-        use_generation_fallbacks=False,
-        missing_key_message=(
-            "OPENROUTER_API_KEY nao configurada na Function. "
-            "Defina o segredo antes de usar o tutor."
-        ),
-        failure_message="O tutor nao conseguiu obter resposta do modelo.",
-        log_label="Tutor",
-    )
-    text = str(reply).strip()
-    if not text:
-        raise LLMUnavailable("O tutor retornou uma resposta vazia.")
+    text = await _complete(llm_messages)
 
     if conversation is None:
         conversation = await history.create_conversation(

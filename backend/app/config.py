@@ -10,6 +10,8 @@ class Settings(BaseSettings):
 
     openrouter_api_key: str = ""
     openrouter_model: str = "nvidia/nemotron-3-super-120b-a12b:free"
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-3.1-flash-lite"
     tutor_model: str = ""
     tutor_daily_limit: int = 40
     fb_credentials_path: str = "./firebase_credentials.json"

@@ -6,12 +6,34 @@ const GENERIC_MESSAGE = 'Não foi possível falar com o tutor agora. Tente de no
 
 export function tutorErrorMessage(error) {
   const status = error?.response?.status;
-  if (status === 429) return LIMIT_MESSAGE;
+  const detail = error?.response?.data?.detail;
+  const code = detail && typeof detail === 'object' ? detail.code : '';
+  if (detail === 'tutor_ai_not_configured') {
+    return 'O Tutor IA ainda não está disponível neste ambiente.';
+  }
+  if (status === 429 || code === 'tutor_daily_limit') return LIMIT_MESSAGE;
+  if (code === 'tutor_provider_rate_limit') {
+    return 'O tutor está com muitas solicitações agora. Tente de novo em instantes.';
+  }
+  if (code === 'tutor_provider_auth' || code === 'tutor_provider_permission') {
+    return 'O tutor não conseguiu se conectar ao serviço de IA. Avise a equipe do projeto.';
+  }
+  if (code === 'tutor_model_invalid') {
+    return 'O modelo do tutor não está disponível. Avise a equipe do projeto.';
+  }
+  if (code === 'tutor_timeout') {
+    return 'O tutor demorou demais para responder. Tente de novo.';
+  }
   if (status === 503) return UNAVAILABLE_MESSAGE;
   if (status === 401 || status === 403) {
     return 'Sua sessão expirou. Entre novamente para falar com o tutor.';
   }
   return GENERIC_MESSAGE;
+}
+
+export async function generateTutorExercise(payload) {
+  const response = await api.post('/api/tutors/exercises', payload, { timeout: 70000 });
+  return response.data;
 }
 
 export async function sendTutorMessage(payload) {

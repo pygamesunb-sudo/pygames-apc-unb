@@ -1,3 +1,6 @@
+import json
+
+import httpx
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -8,6 +11,7 @@ from app.models.beecrowd import BeeCrowdQuery
 from app.routers import beecrowd
 from app.services import firebase_service
 from app.services.ai.client import chat_completion, resolve_models
+from app.services.ai.errors import TutorAINotConfigured
 from app.services.ai.usage import UsageStoreError, consume_daily_message, reset_memory as reset_usage
 from app.services.beecrowd.cache import UnconfiguredBeeCrowdCache, cache_document_id
 from app.services.beecrowd.client import IntegrationNotConfigured
@@ -35,17 +39,23 @@ def isolated_tutor_store(monkeypatch):
 
 @pytest.fixture
 def fake_llm(monkeypatch):
-    async def _complete(messages, **kwargs):
-        _complete.calls += 1
-        _complete.messages = messages
-        _complete.kwargs = kwargs
-        return "Qual variavel guarda o total?"
+    monkeypatch.setattr(settings, "gemini_api_key", "chave-de-teste")
+    monkeypatch.setattr(settings, "tutor_model", "")
 
-    _complete.calls = 0
-    _complete.messages = []
-    _complete.kwargs = {}
-    monkeypatch.setattr("app.services.tutors.service.chat_completion", _complete)
-    return _complete
+    class Fake:
+        name = "gemini"
+        calls = 0
+        messages = []
+        kwargs = {}
+
+        async def complete(self, messages, **kwargs):
+            Fake.calls += 1
+            Fake.messages = messages
+            Fake.kwargs = kwargs
+            return "Qual variavel guarda o total?"
+
+    monkeypatch.setattr("app.services.tutors.service.get_tutor_provider", lambda: Fake())
+    return Fake
 
 
 def test_existing_routes_stay_available():
@@ -187,9 +197,9 @@ def test_chat_strips_solution_from_model_context(fake_llm, monkeypatch):
     assert "SEGREDO_OFICIAL_123" not in blob
     assert "SEGREDO_BLOCO" not in blob
     assert "SAIDA_ESPERADA_XYZ" not in blob
-    expected_model = (settings.tutor_model or "").strip() or settings.openrouter_model
-    assert fake_llm.kwargs["models"] == [expected_model]
-    assert fake_llm.kwargs["use_generation_fallbacks"] is False
+    assert "print(1)" in blob
+    assert fake_llm.kwargs["model"] == settings.gemini_model
+    assert fake_llm.name == "gemini"
 
 
 def test_daily_limit_blocks_second_message(fake_llm, monkeypatch):
@@ -361,3 +371,237 @@ def test_beecrowd_router_contract_is_not_mounted():
     assert configured.status_code == 503
     assert configured.json()["detail"] == "beecrowd_integration_not_configured"
     assert "/api/beecrowd/problems" in app.openapi()["paths"]
+
+
+def _sample_exercise():
+    return {
+        "titulo": "Ultima carta",
+        "tema": "Listas",
+        "dificuldade": "Fácil",
+        "enunciado": "Guarde cinco inteiros e mostre o ultimo.",
+        "entrada": "Cinco inteiros, um por linha.",
+        "saida": "O quinto inteiro.",
+        "exemploEntrada": "1\n2\n3\n4\n9",
+        "exemploSaida": "9",
+        "conceitos": ["listas"],
+    }
+
+
+def test_exercise_parser_rejects_incomplete_or_off_topic_json():
+    from app.services.tutors.exercise import InvalidGeneratedExercise, parse_generated_exercise
+
+    parsed = parse_generated_exercise(
+        "```json\n" + json.dumps(_sample_exercise()) + "\n```",
+        topic="listas",
+        difficulty="facil",
+    )
+    assert parsed.tema == "Listas"
+    assert parsed.dificuldade == "Fácil"
+    broken = dict(_sample_exercise())
+    broken["enunciado"] = "   "
+    with pytest.raises(InvalidGeneratedExercise):
+        parse_generated_exercise(json.dumps(broken), topic="listas", difficulty="facil")
+    other = dict(_sample_exercise())
+    other["tema"] = "Recursão"
+    with pytest.raises(InvalidGeneratedExercise):
+        parse_generated_exercise(json.dumps(other), topic="listas", difficulty="facil")
+
+
+def test_exercise_generation_returns_one_validated_problem(fake_llm, monkeypatch):
+    async def complete(messages, **kwargs):
+        fake_llm.messages = messages
+        return json.dumps(_sample_exercise())
+
+    provider = fake_llm()
+    provider.complete = complete
+    monkeypatch.setattr("app.services.tutors.service.get_tutor_provider", lambda: provider)
+    response = client.post(
+        "/api/tutors/exercises",
+        json={"topic": "listas", "difficulty": "facil"},
+        headers=AUTH,
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["tema"] == "Listas"
+    assert body["dificuldade"] == "Fácil"
+    assert body["exemploEntrada"]
+    assert "solucao" not in body
+    assert "Nao inclua a solucao" in fake_llm.messages[0]["content"]
+
+
+def test_exercise_tutor_discusses_only_the_pinned_problem(fake_llm):
+    exercise = _sample_exercise()
+    response = client.post(
+        "/api/tutors/chat",
+        json={
+            "mode": "exercise",
+            "message": "Nao entendi o exercicio.",
+            "surface": "page",
+            "exercise": exercise,
+        },
+        headers=AUTH,
+    )
+    assert response.status_code == 200
+    assert response.json()["mode"] == "exercise"
+    system = fake_llm.messages[0]["content"]
+    blob = str(fake_llm.messages)
+    assert "Nao gere um novo exercicio" in system
+    assert "Nao substitua o codigo" in system
+    assert "Ultima carta" in blob
+    assert "Etapa 5 de 5" not in system
+
+    missing = client.post(
+        "/api/tutors/chat",
+        json={"mode": "exercise", "message": "oi", "surface": "page"},
+        headers=AUTH,
+    )
+    assert missing.status_code == 422
+
+
+@pytest.mark.parametrize(
+    ("mode", "surface"),
+    [
+        ("apc", "page"),
+        ("python", "page"),
+        ("debug", "page"),
+        ("practice", "page"),
+        ("assistant", "floating"),
+    ],
+)
+def test_each_tutor_mode_uses_gemini(fake_llm, monkeypatch, mode, surface):
+    def forbid_openrouter(*args, **kwargs):
+        raise AssertionError("tutores nao devem chamar o OpenRouter")
+
+    monkeypatch.setattr("app.services.ai.client.chat_completion", forbid_openrouter)
+    response = client.post(
+        "/api/tutors/chat",
+        json={"mode": mode, "message": "como eu comeco?", "surface": surface, "code": "print(1)"},
+        headers=AUTH,
+    )
+    assert response.status_code == 200
+    assert response.json()["mode"] == mode
+    assert response.json()["surface"] == surface
+    assert fake_llm.name == "gemini"
+    assert fake_llm.kwargs["model"] == settings.gemini_model
+    assert "print(1)" in str(fake_llm.messages)
+
+
+def test_gemini_history_uses_system_instruction_and_model_role():
+    from app.services.ai.gemini_client import split_for_gemini
+
+    system, contents = split_for_gemini([
+        {"role": "system", "content": "seja um tutor"},
+        {"role": "user", "content": "oi"},
+        {"role": "assistant", "content": "vamos pensar"},
+        {"role": "user", "content": "e agora?"},
+    ])
+    assert system == "seja um tutor"
+    assert [item["role"] for item in contents] == ["user", "model", "user"]
+    assert contents[1]["parts"][0]["text"] == "vamos pensar"
+
+
+def test_chat_without_gemini_key_stays_controlled_and_health_keeps_working(monkeypatch):
+    monkeypatch.setattr(settings, "gemini_api_key", "")
+    health = client.get("/health")
+    chat = client.post(
+        "/api/tutors/chat",
+        json={"mode": "apc", "message": "oi", "surface": "page"},
+        headers=AUTH,
+    )
+    assert health.status_code == 200
+    assert health.json()["status"] == "ok"
+    assert chat.status_code == 503
+    assert chat.json()["detail"] == "tutor_ai_not_configured"
+    assert "Traceback" not in chat.text
+    assert "AIza" not in chat.text
+
+
+def test_missing_gemini_key_is_a_controlled_error(monkeypatch):
+    monkeypatch.setattr(settings, "gemini_api_key", "")
+    monkeypatch.setattr(settings, "tutor_model", "")
+    response = client.post(
+        "/api/tutors/chat",
+        json={"mode": "apc", "message": "oi", "surface": "page"},
+        headers=AUTH,
+    )
+    assert response.status_code == 503
+    assert response.json()["detail"] == "tutor_ai_not_configured"
+    assert "Traceback" not in response.text
+    assert "AIza" not in response.text
+
+
+def test_invalid_tutor_model_does_not_call_gemini(monkeypatch):
+    monkeypatch.setattr(settings, "gemini_api_key", "chave-de-teste")
+    monkeypatch.setattr(settings, "tutor_model", "nvidia/nemotron-3-super-120b-a12b:free")
+    response = client.post(
+        "/api/tutors/chat",
+        json={"mode": "python", "message": "oi", "surface": "page"},
+        headers=AUTH,
+    )
+    assert response.status_code == 503
+    assert response.json()["detail"]["code"] == "tutor_model_invalid"
+    assert "nemotron" not in response.text
+    assert "chave-de-teste" not in response.text
+
+
+def test_gemini_rate_limit_stays_separate_from_the_daily_limit(monkeypatch):
+    from app.services.ai.errors import TutorProviderError
+
+    monkeypatch.setattr(settings, "gemini_api_key", "chave-de-teste")
+
+    class Limited:
+        name = "gemini"
+
+        async def complete(self, messages, **kwargs):
+            raise TutorProviderError("rate_limit", status=429)
+
+    monkeypatch.setattr("app.services.tutors.service.get_tutor_provider", lambda: Limited())
+    response = client.post(
+        "/api/tutors/chat",
+        json={"mode": "practice", "message": "me da uma dica", "surface": "page"},
+        headers=AUTH,
+    )
+    assert response.status_code == 503
+    assert response.json()["detail"]["code"] == "tutor_provider_rate_limit"
+    assert "Traceback" not in response.text
+
+
+@pytest.mark.asyncio
+async def test_gemini_provider_uses_project_model_and_hides_the_key(monkeypatch):
+    from app.services.ai.errors import TutorProviderError
+    from app.services.ai.gemini_client import GeminiProvider
+
+    monkeypatch.setattr(settings, "gemini_api_key", "chave-de-teste")
+    monkeypatch.setattr(settings, "tutor_model", "")
+    seen = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["url"] = str(request.url)
+        seen["header"] = request.headers.get("x-goog-api-key")
+        if request.url.path.endswith("gemini-inexistente:generateContent"):
+            return httpx.Response(404, json={"error": {"status": "NOT_FOUND"}})
+        return httpx.Response(200, json={
+            "candidates": [{"content": {"parts": [{"text": "Vamos olhar a entrada."}]}}],
+            "usageMetadata": {"promptTokenCount": 3, "candidatesTokenCount": 4, "totalTokenCount": 7},
+        })
+
+    transport = httpx.MockTransport(handler)
+    provider = GeminiProvider(transport=transport)
+    text = await provider.complete(
+        [{"role": "system", "content": "seja tutor"}, {"role": "user", "content": "oi"}],
+        model=settings.gemini_model,
+    )
+    assert text == "Vamos olhar a entrada."
+    assert settings.gemini_model in seen["url"]
+    assert "chave-de-teste" not in seen["url"]
+    assert seen["header"] == "chave-de-teste"
+
+    missing = GeminiProvider(transport=transport)
+    monkeypatch.setattr(settings, "gemini_api_key", "")
+    with pytest.raises(TutorAINotConfigured):
+        await missing.complete([{"role": "user", "content": "oi"}])
+
+    monkeypatch.setattr(settings, "gemini_api_key", "chave-de-teste")
+    with pytest.raises(TutorProviderError) as invalid:
+        await provider.complete([{"role": "user", "content": "oi"}], model="gemini-inexistente")
+    assert invalid.value.code == "model"

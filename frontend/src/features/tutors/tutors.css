@@ -177,8 +177,117 @@
   margin: 0;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  overflow-x: auto;
   color: var(--text-primary);
   font-size: 0.92rem;
+}
+
+.tutor-exercise {
+  gap: 14px;
+}
+
+.tutor-exercise__setup {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.tutor-exercise__setup label,
+.tutor-exercise__label {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.tutor-exercise__select {
+  width: min(100%, 320px);
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: rgba(8, 8, 20, 0.9);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 0.92rem;
+}
+
+.tutor-exercise__difficulties,
+.tutor-exercise__quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tutor-exercise__quick .suggestion-filter-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.tutor-exercise__pinned {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  border-color: var(--border-accent);
+  box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.18);
+}
+
+.tutor-exercise__pinned h3 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.tutor-exercise__pinned p {
+  margin: 0;
+}
+
+.tutor-exercise__kicker {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #c4b5fd;
+}
+
+.tutor-exercise__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+}
+
+.tutor-exercise__example {
+  width: 100%;
+  min-width: 0;
+}
+
+.tutor-exercise__example span {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.tutor-exercise__example pre {
+  margin: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: rgba(5, 5, 16, 0.72);
+  color: var(--text-primary);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.84rem;
+  white-space: pre;
+}
+
+.tutor-exercise__concepts {
+  color: var(--text-secondary);
+  font-size: 0.86rem;
 }
 
 .tutor-chat__status {
@@ -318,6 +427,12 @@
   .tutor-chat__form {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .tutor-exercise__select,
+  .tutor-exercise__pinned,
+  .tutor-exercise__pinned .btn-secondary {
+    width: 100%;
   }
 
   .tutors-page {
