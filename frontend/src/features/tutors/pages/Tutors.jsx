@@ -15,36 +15,36 @@ import '../tutors.css';
 const TUTORS = [
   {
     mode: 'apc',
-    title: 'Tutor APC',
-    description: 'Ajuda com lógica, condicionais, laços, funções e conceitos de APC.',
+    title: 'Tutor APC (LOGAN)',
+    description: 'Tutor APC. Guia o pensamento computacional sem entregar código pronto.',
     icon: GraduationCap,
     color: '#a78bfa',
   },
   {
     mode: 'python',
-    title: 'Tutor Python',
-    description: 'Ajuda com sintaxe, estruturas de dados e conceitos da linguagem.',
+    title: 'Tutor Python (CAIO)',
+    description: 'Tutor Python. Ajuda com sintaxe, indentação, tipos e funções nativas.',
     icon: Code2,
     color: '#22d3ee',
   },
   {
     mode: 'debug',
-    title: 'Debugador',
-    description: 'Analisa o código do aluno e ajuda a descobrir o erro sem entregar imediatamente a solução.',
+    title: 'Debugador (DEBI)',
+    description: 'Debugadora. Ajuda a rastrear o erro do console sem entregar a linha corrigida.',
     icon: Bug,
     color: '#f59e0b',
   },
   {
     mode: 'practice',
-    title: 'Treinador de Exercícios',
-    description: 'Ajuda o aluno a raciocinar sobre exercícios passo a passo.',
+    title: 'Treinador de Exercícios (TITO)',
+    description: 'Treinador. Acompanha o exercício atual, uma etapa de cada vez.',
     icon: ListChecks,
     color: '#10b981',
   },
   {
     mode: 'exercise_generator',
-    title: 'Tutor de Exercícios',
-    description: 'Pratique programação com exercícios gerados especialmente para você.',
+    title: 'Tutor de Exercícios (MIRA)',
+    description: 'Cria um desafio no seu tema e tutora esse exercício sem revelar a solução.',
     icon: Brain,
     color: '#c4b5fd',
   },
@@ -177,7 +177,7 @@ export default function Tutors() {
   ) : (
     <>
       <header className="tutors-page__intro">
-        <h2>Tutores IA</h2>
+        <h2>Tutores agentes de aprendizagem</h2>
         <p>Escolha um perfil. O tutor conduz o raciocínio antes de mostrar uma solução.</p>
       </header>
       <div className="tutors-grid">

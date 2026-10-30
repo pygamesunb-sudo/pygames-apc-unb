@@ -85,13 +85,13 @@ _TOPIC_LABELS = {
 }
 
 _TUTOR_NAMES = {
-    "apc": "Tutor APC",
-    "python": "Tutor Python",
-    "debug": "Debugador",
-    "practice": "Treinador de Exercícios",
+    "apc": "Tutor APC (LOGAN)",
+    "python": "Tutor Python (CAIO)",
+    "debug": "Debugador (DEBI)",
+    "practice": "Treinador de Exercícios (TITO)",
     "assistant": "Assistente",
-    "exercise": "Tutor de Exercícios",
-    "exercise_generator": "Tutor de Exercícios",
+    "exercise": "Tutor de Exercícios (MIRA)",
+    "exercise_generator": "Tutor de Exercícios (MIRA)",
 }
 
 

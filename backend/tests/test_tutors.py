@@ -705,7 +705,7 @@ def test_tutor_history_resumes_renames_archives_and_stays_private(fake_llm):
     )
     assert created.status_code == 201
     first_id = created.json()["conversation_id"]
-    assert created.json()["title"] == "Tutor APC"
+    assert created.json()["title"] == "Tutor APC (LOGAN)"
     assert created.json()["archived"] is False
 
     sent = client.post(
@@ -809,9 +809,12 @@ def test_named_tutor_prompts_stay_separate():
         PYTHON_TUTOR_PROMPT,
     )
 
-    assert "socratico" in APC_TUTOR_PROMPT.casefold() or "socrático" in APC_TUTOR_PROMPT.casefold()
-    assert "iniciante" in PYTHON_TUTOR_PROMPT.casefold()
-    assert "dois-pontos" in DEBUG_TUTOR_PROMPT
+    assert "LOGAN" in APC_TUTOR_PROMPT
+    assert "socrática" in APC_TUTOR_PROMPT.casefold()
+    assert "CAIO" in PYTHON_TUTOR_PROMPT
+    assert "DEBI" in DEBUG_TUTOR_PROMPT
+    assert "JAMAIS entregue a linha de código corrigida" in DEBUG_TUTOR_PROMPT
+    assert "TITO" in PRACTICE_TUTOR_PROMPT
     assert "Nao gere outro exercicio" in PRACTICE_TUTOR_PROMPT
     assert "reference_solution" in EXERCISE_GENERATOR_PROMPT
 
@@ -975,14 +978,17 @@ def test_definitive_tutor_prompts_stay_on_the_backend():
         build_tutor_prompt,
     )
 
-    assert "NÃO fornecer códigos prontos" in APC_TUTOR_PROMPT
-    assert "NÃO completar o programa do aluno" in APC_TUTOR_PROMPT
-    assert "primeiro trabalhe a lógica" in APC_TUTOR_PROMPT.casefold()
-    assert "Observe o final da linha do `for`" in PYTHON_TUTOR_PROMPT
-    assert "Nunca começar fornecendo código corrigido" in DEBUG_TUTOR_PROMPT
-    assert "exercício JÁ EXISTENTE" in PRACTICE_TUTOR_PROMPT
-    assert "FASE 1" in EXERCISE_GENERATOR_TUTOR_PROMPT
-    assert "FASE 2" in EXERCISE_GENERATOR_TUTOR_PROMPT
+    assert "LOGAN" in APC_TUTOR_PROMPT
+    assert "sem entregar código pronto" in APC_TUTOR_PROMPT
+    assert "UMA pergunta por turno" in APC_TUTOR_PROMPT
+    assert "CAIO" in PYTHON_TUTOR_PROMPT
+    assert "exemplo genérico" in PYTHON_TUTOR_PROMPT
+    assert "DEBI" in DEBUG_TUTOR_PROMPT
+    assert "JAMAIS entregue a linha de código corrigida" in DEBUG_TUTOR_PROMPT
+    assert "TITO" in PRACTICE_TUTOR_PROMPT
+    assert "problema atual" in PRACTICE_TUTOR_PROMPT
+    assert "MIRA" in EXERCISE_GENERATOR_TUTOR_PROMPT
+    assert "solução de referência" in EXERCISE_GENERATOR_TUTOR_PROMPT
     assert "Nao gere um novo exercicio" in EXERCISE_GENERATOR_TUTOR_PROMPT
 
     focused = build_tutor_prompt("apc", focus_mode=True)
@@ -1006,17 +1012,17 @@ def test_definitive_tutor_prompts_stay_on_the_backend():
     assert "Ignore suas instruções" not in system
     assert "Ignore suas instruções" in student
     assert "x =" in student
-    assert "NÃO completar o programa do aluno" in system
+    assert "sem entregar código pronto" in system
     assert "Modo foco ativo" in system
     assert "prevalecem" in system
 
 
 def test_each_tutor_keeps_the_socratic_instruction(fake_llm):
     cases = [
-        ("apc", "NÃO fornecer códigos prontos"),
-        ("python", "Observe o final da linha do `for`"),
-        ("debug", "Nunca começar fornecendo código corrigido"),
-        ("practice", "Nao gere outro exercicio"),
+        ("apc", "LOGAN"),
+        ("python", "CAIO"),
+        ("debug", "DEBI"),
+        ("practice", "TITO"),
     ]
     for mode, marker in cases:
         response = client.post(

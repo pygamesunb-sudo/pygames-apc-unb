@@ -24,9 +24,7 @@ import BottomNav from './components/BottomNav';
 import LoadingView from './components/LoadingView';
 import Tutors from './features/tutors/pages/Tutors';
 import FloatingTutor from './features/tutors/components/FloatingTutor';
-import ReadyExercises from './features/readyExercises/pages/ReadyExercises';
 import { markReadyExerciseProgress } from './features/readyExercises/services/readyExercisesApi';
-import { toPracticeProblem } from './features/readyExercises/readyExercisesModel';
 
 
 import { generateProblemStream, generateProblem, validateProblem, reviewProblem, submitCode, getUserProfile } from './services/api';
@@ -49,7 +47,7 @@ const VIEW = {
 export default function App() {
   const [view, setView] = useState(() => {
     const hash = window.location.hash.replace('#', '');
-    if (hash === 'beecrowd') return VIEW.READY;
+    if (hash === 'beecrowd' || hash === VIEW.READY) return VIEW.HOME;
     if (Object.values(VIEW).includes(hash)) {
       if (hash === VIEW.EXERCISE || hash === VIEW.LOADING) {
         return VIEW.HOME;
@@ -85,9 +83,9 @@ export default function App() {
 
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '');
-      if (hash === 'beecrowd') {
-        setView(VIEW.READY);
-        window.location.hash = VIEW.READY;
+      if (hash === 'beecrowd' || hash === VIEW.READY) {
+        setView(VIEW.HOME);
+        window.location.hash = VIEW.HOME;
         return;
       }
       if (Object.values(VIEW).includes(hash)) {
@@ -333,32 +331,6 @@ export default function App() {
     setView(VIEW.EXERCISE);
   };
 
-  const handleOpenReady = (exercise) => {
-    setError(null);
-    setResult(null);
-    setValidationStatus('');
-    setIsProblemReady(false);
-    setIsGenerating(false);
-    setProblem(toPracticeProblem(exercise));
-    setView(VIEW.EXERCISE);
-    markReadyExerciseProgress(exercise.id, 'started').catch(() => {});
-  };
-
-  const handleBackToReady = () => {
-    setProblem(null);
-    setResult(null);
-    setError(null);
-    setIsProblemReady(false);
-    setValidationStatus('');
-    setView(VIEW.READY);
-  };
-
-  const handleOpenReadyCatalog = () => {
-    setError(null);
-    setResult(null);
-    setView(VIEW.READY);
-  };
-
   // Render da Landing Page (login obrigatório)
   if (!currentUser) {
     return (
@@ -407,8 +379,6 @@ export default function App() {
               onSelectProblem={handleSelectProblem} 
               isLoading={isGenerating} 
               userProfile={userProfile}
-              onOpenReady={handleOpenReady}
-              onOpenReadyCatalog={handleOpenReadyCatalog}
             />
           )}
 
@@ -430,7 +400,7 @@ export default function App() {
               onSubmit={handleSubmit}
               isSubmitting={isSubmitting}
               result={result}
-              onBack={problem.ready_exercise ? handleBackToReady : handleBack}
+              onBack={handleBack}
               validationStatus={validationStatus}
               isGenerating={isGenerating}
               onDraftChange={setExerciseCode}
@@ -439,10 +409,6 @@ export default function App() {
 
           {view === VIEW.TUTORS && (
             <Tutors />
-          )}
-
-          {view === VIEW.READY && (
-            <ReadyExercises onOpen={handleOpenReady} />
           )}
 
           {view === VIEW.MINIGAME && (

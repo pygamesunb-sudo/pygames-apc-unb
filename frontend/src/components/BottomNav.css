@@ -6,7 +6,8 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 64px;
+  min-height: 64px;
+  height: auto;
   background: rgba(10, 14, 26, 0.85);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);

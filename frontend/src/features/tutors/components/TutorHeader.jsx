@@ -16,7 +16,7 @@ export default function TutorHeader({
         {onBack && (
           <button type="button" className="btn-secondary tutor-header__icon-btn" onClick={onBack}>
             <ArrowLeft size={16} aria-hidden="true" />
-            Tutores
+            Tutores agentes de aprendizagem
           </button>
         )}
         <div className="tutor-header__titles">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Code, Sparkles, Trophy, History, LogOut, BookOpen, Bot, Library } from 'lucide-react';
+import { Code, Sparkles, Trophy, History, LogOut, BookOpen, Bot } from 'lucide-react';
 import './BottomNav.css';
 
 
@@ -57,16 +57,7 @@ export default function BottomNav({
         onClick={() => handleNavClick(VIEW.TUTORS)}
       >
         <Bot size={20} style={{ color: '#22d3ee' }} />
-        <span>Tutores</span>
-      </button>
-
-      <button
-        className={`bottom-nav-item ${view === VIEW.READY ? 'bottom-nav-item--active' : ''}`}
-        onClick={() => handleNavClick(VIEW.READY)}
-        aria-label="Exercícios Prontos"
-      >
-        <Library size={20} style={{ color: '#a78bfa' }} />
-        <span>Prontos</span>
+        <span style={{ lineHeight: 1.05, textAlign: 'center' }}>Tutores agentes de aprendizagem</span>
       </button>
 
       {/* Docs Mobile Link */}
