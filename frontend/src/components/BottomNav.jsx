@@ -1,5 +1,5 @@
 import React from 'react';
-import { Code, Sparkles, Trophy, History, LogOut, BookOpen, Bot } from 'lucide-react';
+import { Code, Sparkles, Trophy, History, LogOut, BookOpen, Bot, GraduationCap } from 'lucide-react';
 import './BottomNav.css';
 
 
@@ -42,6 +42,14 @@ export default function BottomNav({
       >
         <Trophy size={20} style={{ color: '#f59e0b' }} />
         <span>Ranking</span>
+      </button>
+
+      <button
+        className={`bottom-nav-item ${view === VIEW.LEARNING ? 'bottom-nav-item--active' : ''}`}
+        onClick={() => handleNavClick(VIEW.LEARNING)}
+      >
+        <GraduationCap size={20} style={{ color: '#22d3ee' }} />
+        <span>Aprendizados</span>
       </button>
 
       <button 

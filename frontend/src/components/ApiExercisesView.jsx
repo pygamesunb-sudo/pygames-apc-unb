@@ -24,8 +24,9 @@ export default function ApiExercisesView({
 }) {
   const [evaluatingExId, setEvaluatingExId] = useState(null);
 
-  // Calcula o total resolvido de todos os 40
   const completedCount = Object.keys(solvedExercises).filter(k => solvedExercises[k]).length;
+  const totalExercises = Object.values(API_EXERCISES).reduce((sum, items) => sum + items.length, 0);
+  const totalXp = totalExercises * 50;
 
   const handleSubmissao = (ex) => {
     setEvaluatingExId(ex.id);
@@ -44,7 +45,7 @@ export default function ApiExercisesView({
         {exerciseTopics.map(topic => {
           const topicExercises = API_EXERCISES[topic.id] || [];
           const solvedInTopic = topicExercises.filter(ex => solvedExercises[ex.id]).length;
-          const isTopicCompleted = solvedInTopic === 5;
+          const isTopicCompleted = topicExercises.length > 0 && solvedInTopic === topicExercises.length;
           
           return (
             <button
@@ -82,7 +83,7 @@ export default function ApiExercisesView({
                 </span>
               </div>
               <span style={{ fontSize: '0.75rem', color: isTopicCompleted ? 'var(--accent-success)' : 'var(--text-secondary)' }}>
-                {solvedInTopic} de 5 concluídos ({solvedInTopic * 50} XP)
+                {solvedInTopic} de {topicExercises.length} concluídos ({solvedInTopic * 50} XP)
               </span>
             </button>
           );
@@ -97,13 +98,13 @@ export default function ApiExercisesView({
             Progresso Geral nos Exercícios de Programação API
           </span>
           <span style={{ color: '#10b981', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
-            {completedCount * 50} / 2000 XP
+            {completedCount * 50} / {totalXp} XP
           </span>
         </div>
         <div className="progress-bar-bg">
           <div 
             className="progress-bar-fill" 
-            style={{ width: `${(completedCount / 40) * 100}%` }}
+            style={{ width: `${totalExercises ? (completedCount / totalExercises) * 100 : 0}%` }}
           />
         </div>
         <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
@@ -112,7 +113,7 @@ export default function ApiExercisesView({
       </div>
 
       {/* Certificado de Proficiência Retro Gold - Abre quando todos os 40/40 são resolvidos */}
-      {completedCount === 40 && (
+      {completedCount === totalExercises && totalExercises > 0 && (
         <div className="certificate-card card animate-fade-in" style={{ border: '2px solid #eab308', background: 'linear-gradient(135deg, rgba(234, 179, 8, 0.08) 0%, rgba(0, 0, 0, 0.4) 100%)', textAlign: 'center', padding: '40px 24px', position: 'relative', marginTop: 24, marginBottom: 24 }}>
           <div className="certificate-seal" style={{ fontSize: '2rem', color: '#eab308', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed #eab308', borderRadius: '50%', width: 70, height: 70, margin: '0 auto 16px', background: 'rgba(234, 179, 8, 0.1)' }}>
             <Trophy size={36} />
@@ -121,10 +122,10 @@ export default function ApiExercisesView({
             Certificado de API Integrator
           </h2>
           <p className="certificate-text" style={{ fontSize: '1rem', lineHeight: '1.6', color: 'var(--text-primary)', maxWidth: '700px', margin: '0 auto 24px' }}>
-            Certificamos com distinção que o jogador <strong>{currentUser?.displayName || 'Desenvolvedor APC'}</strong> concluiu com sucesso todos os <strong>40 desafios de integração e validação da API</strong> em <strong>Python</strong> do ecossistema <strong>Pygame-APC</strong>, demonstrando excelente proficiência em requisições seguras, manipulação de payloads JSON e automação de testes.
+            Certificamos com distinção que o jogador <strong>{currentUser?.displayName || 'Desenvolvedor APC'}</strong> concluiu com sucesso todos os <strong>{totalExercises} desafios de integração e validação da API</strong> em <strong>Python</strong> do ecossistema <strong>Pygame-APC</strong>, demonstrando excelente proficiência em requisições seguras, manipulação de payloads JSON e automação de testes.
           </p>
           <div style={{ display: 'inline-block', background: 'rgba(234, 179, 8, 0.15)', border: '1px solid #eab308', color: '#eab308', padding: '6px 16px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600 }}>
-            Conquistou +2000 XP Globais
+            Conquistou +{totalXp} XP Globais
           </div>
         </div>
       )}

@@ -57,13 +57,13 @@ async def update_score(body: GameScoreRequest, user: dict = Depends(get_current_
 
 
 @router.get("/leaderboard")
-async def get_leaderboard(user: dict = Depends(get_current_user)):
+async def get_leaderboard(kind: str = "score", user: dict = Depends(get_current_user)):
     """
-    Retorna o Placar de Lideres global de todos os usuarios ordenados pela pontuacao geral.
-    Exige autenticacao.
+    kind=score e o placar geral. kind=learning ordena pelo XP de aprendizado.
     """
-    leaderboard = await firebase_service.get_leaderboard_data()
-    return leaderboard
+    if kind == "learning":
+        return await firebase_service.get_learning_leaderboard_data()
+    return await firebase_service.get_leaderboard_data()
 
 
 class GeminiConfigRequest(BaseModel):

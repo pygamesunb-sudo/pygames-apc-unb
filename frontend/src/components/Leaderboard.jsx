@@ -4,25 +4,30 @@ import { getLeaderboard } from '../services/api';
 import './Leaderboard.css';
 
 
-export default function Leaderboard({ onBack }) {
+export default function Leaderboard({ onBack, initialBoard = 'score' }) {
   const [leaderboard, setLeaderboard] = useState([]);
+  const [board, setBoard] = useState(initialBoard);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const learning = board === 'learning';
 
   useEffect(() => {
     async function loadData() {
       try {
         setIsLoading(true);
-        const data = await getLeaderboard();
-        setLeaderboard(data);
+        setError(null);
+        const data = await getLeaderboard(board);
+        setLeaderboard(Array.isArray(data) ? data : []);
       } catch (err) {
-        setError("Nao foi possivel carregar o ranking global. Tente novamente.");
+        setError(learning
+          ? "Nao foi possivel carregar o placar de aprendizados. Tente novamente."
+          : "Nao foi possivel carregar o ranking global. Tente novamente.");
       } finally {
         setIsLoading(false);
       }
     }
     loadData();
-  }, []);
+  }, [board, learning]);
 
   return (
     <div className="leaderboard-view animate-fade-in" style={{ width: '100%', maxWidth: 900, margin: '0 auto 40px' }}>
@@ -32,9 +37,28 @@ export default function Leaderboard({ onBack }) {
           Voltar para o Inicio
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Trophy className="text-accent animate-pulse" size={24} style={{ color: '#f59e0b' }} />
-          <h2 style={{ margin: 0, color: '#f8fafc', fontWeight: 600 }}>Placar de Lideres Global</h2>
+          <Trophy className="text-accent animate-pulse" size={24} style={{ color: learning ? '#22d3ee' : '#f59e0b' }} />
+          <h2 style={{ margin: 0, color: '#f8fafc', fontWeight: 600 }}>
+            {learning ? 'Placar de Aprendizados' : 'Placar de Lideres Global'}
+          </h2>
         </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+        <button
+          type="button"
+          className={learning ? 'btn-secondary' : 'btn-primary'}
+          onClick={() => setBoard('score')}
+        >
+          Lideres
+        </button>
+        <button
+          type="button"
+          className={learning ? 'btn-primary' : 'btn-secondary'}
+          onClick={() => setBoard('learning')}
+        >
+          Aprendizados
+        </button>
       </div>
 
       {isLoading ? (
@@ -57,18 +81,29 @@ export default function Leaderboard({ onBack }) {
                 <tr style={{ background: 'rgba(30, 41, 59, 0.5)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                   <th style={{ padding: '16px 20px', color: '#94a3b8', fontSize: '0.85rem', fontWeight: 600 }}>Posicao</th>
                   <th style={{ padding: '16px 20px', color: '#94a3b8', fontSize: '0.85rem', fontWeight: 600 }}>Jogador</th>
-                  <th style={{ padding: '16px 20px', color: '#a855f7', fontSize: '0.85rem', fontWeight: 600, textAlign: 'center' }}>Pontos Totais</th>
-                  <th style={{ padding: '16px 20px', color: '#3b82f6', fontSize: '0.85rem', fontWeight: 600, textAlign: 'center' }}>Doodle Ninja</th>
-                  <th style={{ padding: '16px 20px', color: '#10b981', fontSize: '0.85rem', fontWeight: 600, textAlign: 'center' }}>Snake.py</th>
-                  <th style={{ padding: '16px 20px', color: '#f59e0b', fontSize: '0.85rem', fontWeight: 600, textAlign: 'center' }}>Bug Invaders</th>
-                  <th style={{ padding: '16px 20px', color: '#ec4899', fontSize: '0.85rem', fontWeight: 600, textAlign: 'center' }}>Programacao (XP)</th>
+                  {learning ? (
+                    <>
+                      <th style={{ padding: '16px 20px', color: '#22d3ee', fontSize: '0.85rem', fontWeight: 600, textAlign: 'center' }}>Desafios</th>
+                      <th style={{ padding: '16px 20px', color: '#ec4899', fontSize: '0.85rem', fontWeight: 600, textAlign: 'center' }}>Aprendizado (XP)</th>
+                    </>
+                  ) : (
+                    <>
+                      <th style={{ padding: '16px 20px', color: '#a855f7', fontSize: '0.85rem', fontWeight: 600, textAlign: 'center' }}>Pontos Totais</th>
+                      <th style={{ padding: '16px 20px', color: '#3b82f6', fontSize: '0.85rem', fontWeight: 600, textAlign: 'center' }}>Doodle Ninja</th>
+                      <th style={{ padding: '16px 20px', color: '#10b981', fontSize: '0.85rem', fontWeight: 600, textAlign: 'center' }}>Snake.py</th>
+                      <th style={{ padding: '16px 20px', color: '#f59e0b', fontSize: '0.85rem', fontWeight: 600, textAlign: 'center' }}>Bug Invaders</th>
+                      <th style={{ padding: '16px 20px', color: '#ec4899', fontSize: '0.85rem', fontWeight: 600, textAlign: 'center' }}>Programacao (XP)</th>
+                    </>
+                  )}
                 </tr>
               </thead>
               <tbody>
                 {leaderboard.length === 0 ? (
                   <tr>
-                    <td colSpan="7" style={{ padding: '40px 20px', textAlign: 'center', color: '#64748b' }}>
-                      Nenhum jogador registrado ainda. Seja o primeiro a pontuar!
+                    <td colSpan={learning ? 4 : 7} style={{ padding: '40px 20px', textAlign: 'center', color: '#64748b' }}>
+                      {learning
+                        ? 'Ninguem registrou aprendizado ainda. Resolva um desafio da Docs API para aparecer aqui.'
+                        : 'Nenhum jogador registrado ainda. Seja o primeiro a pontuar!'}
                     </td>
                   </tr>
                 ) : (
@@ -147,21 +182,34 @@ export default function Leaderboard({ onBack }) {
                             </div>
                           </div>
                         </td>
-                        <td style={{ padding: '16px 20px', textAlign: 'center', fontWeight: 'bold', color: '#a855f7', fontSize: '1rem' }}>
-                          {player.total_score || 0}
-                        </td>
-                        <td style={{ padding: '16px 20px', textAlign: 'center', color: '#f8fafc', fontSize: '0.85rem' }}>
-                          {player.games?.doodle || 0}
-                        </td>
-                        <td style={{ padding: '16px 20px', textAlign: 'center', color: '#f8fafc', fontSize: '0.85rem' }}>
-                          {player.games?.snake || 0}
-                        </td>
-                        <td style={{ padding: '16px 20px', textAlign: 'center', color: '#f8fafc', fontSize: '0.85rem' }}>
-                          {player.games?.invaders || 0}
-                        </td>
-                        <td style={{ padding: '16px 20px', textAlign: 'center', color: '#ec4899', fontSize: '0.85rem', fontWeight: 600 }}>
-                          {player.coding_points || 0} XP
-                        </td>
+                        {learning ? (
+                          <>
+                            <td style={{ padding: '16px 20px', textAlign: 'center', color: '#f8fafc', fontSize: '0.85rem' }}>
+                              {player.solved_count || 0}
+                            </td>
+                            <td style={{ padding: '16px 20px', textAlign: 'center', color: '#ec4899', fontSize: '0.85rem', fontWeight: 600 }}>
+                              {player.coding_points || 0} XP
+                            </td>
+                          </>
+                        ) : (
+                          <>
+                            <td style={{ padding: '16px 20px', textAlign: 'center', fontWeight: 'bold', color: '#a855f7', fontSize: '1rem' }}>
+                              {player.total_score || 0}
+                            </td>
+                            <td style={{ padding: '16px 20px', textAlign: 'center', color: '#f8fafc', fontSize: '0.85rem' }}>
+                              {player.games?.doodle || 0}
+                            </td>
+                            <td style={{ padding: '16px 20px', textAlign: 'center', color: '#f8fafc', fontSize: '0.85rem' }}>
+                              {player.games?.snake || 0}
+                            </td>
+                            <td style={{ padding: '16px 20px', textAlign: 'center', color: '#f8fafc', fontSize: '0.85rem' }}>
+                              {player.games?.invaders || 0}
+                            </td>
+                            <td style={{ padding: '16px 20px', textAlign: 'center', color: '#ec4899', fontSize: '0.85rem', fontWeight: 600 }}>
+                              {player.coding_points || 0} XP
+                            </td>
+                          </>
+                        )}
                       </tr>
                     );
                   })
@@ -174,7 +222,9 @@ export default function Leaderboard({ onBack }) {
           <div className="leaderboard-mobile-list show-on-mobile">
             {leaderboard.length === 0 ? (
               <div style={{ padding: '40px 20px', textAlign: 'center', color: '#cbd5e1' }}>
-                Nenhum jogador registrado ainda. Seja o primeiro a pontuar!
+                {learning
+                  ? 'Ninguem registrou aprendizado ainda. Resolva um desafio da Docs API para aparecer aqui.'
+                  : 'Nenhum jogador registrado ainda. Seja o primeiro a pontuar!'}
               </div>
             ) : (
               leaderboard.map((player, idx) => {
@@ -246,13 +296,27 @@ export default function Leaderboard({ onBack }) {
                         </div>
                       </div>
                       <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '0.65rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total</div>
-                        <div style={{ fontWeight: 'bold', color: '#a855f7', fontSize: '1.1rem' }}>
-                          {player.total_score || 0}
+                        <div style={{ fontSize: '0.65rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          {learning ? 'Aprendizado' : 'Total'}
+                        </div>
+                        <div style={{ fontWeight: 'bold', color: learning ? '#22d3ee' : '#a855f7', fontSize: '1.1rem' }}>
+                          {learning ? `${player.coding_points || 0} XP` : (player.total_score || 0)}
                         </div>
                       </div>
                     </div>
                     {/* Grid de Sub-pontuacoes */}
+                    {learning ? (
+                      <div className="leaderboard-mobile-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '8px 10px', background: 'rgba(15, 23, 42, 0.3)', borderRadius: '6px' }}>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '0.6rem', color: '#64748b' }}>Desafios</div>
+                          <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#f8fafc' }}>{player.solved_count || 0}</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '0.6rem', color: '#64748b' }}>Aprendizado</div>
+                          <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#22d3ee' }}>{player.coding_points || 0} XP</div>
+                        </div>
+                      </div>
+                    ) : (
                     <div className="leaderboard-mobile-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', padding: '8px 10px', background: 'rgba(15, 23, 42, 0.3)', borderRadius: '6px' }}>
                       <div style={{ textAlign: 'center' }}>
                         <div style={{ fontSize: '0.6rem', color: '#64748b' }}>Doodle</div>
@@ -271,6 +335,7 @@ export default function Leaderboard({ onBack }) {
                         <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#ec4899' }}>{player.coding_points || 0}</div>
                       </div>
                     </div>
+                    )}
                   </div>
                 );
               })

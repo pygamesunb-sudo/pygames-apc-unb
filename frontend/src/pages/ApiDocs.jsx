@@ -262,6 +262,8 @@ export default function ApiDocs({ currentUser, userProfile, setUserProfile }) {
         response = await api.get(ep.path);
       } else if (ep.method === 'POST') {
         response = await api.post(ep.path, parsedPayload);
+      } else if (ep.method === 'PATCH') {
+        response = await api.patch(ep.path, parsedPayload);
       }
 
       setResultsExec(prev => ({
@@ -323,6 +325,7 @@ export default function ApiDocs({ currentUser, userProfile, setUserProfile }) {
   };
 
   const completedCount = Object.keys(solvedExercises).filter(k => solvedExercises[k]).length;
+  const totalXp = Object.values(API_EXERCISES).reduce((sum, items) => sum + items.length, 0) * 50;
 
   return (
     <div 
@@ -394,6 +397,20 @@ export default function ApiDocs({ currentUser, userProfile, setUserProfile }) {
                 </button>
               ))}
             </div>
+
+            <div className="apidocs-nav-section">
+              <span className="apidocs-section-title">v2 · Tutores agentes de aprendizagem</span>
+              {filteredEndpoints.filter(e => e.tag === 'tutors').map(ep => (
+                <button
+                  key={ep.id}
+                  className={`apidocs-nav-item ${activeId === ep.id ? 'apidocs-nav-item--active' : ''}`}
+                  onClick={() => setActiveId(ep.id)}
+                >
+                  <span className={`method-badge method-badge--${ep.method.toLowerCase()}`}>{ep.method}</span>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ep.path}</span>
+                </button>
+              ))}
+            </div>
           </nav>
         </aside>
       )}
@@ -414,7 +431,7 @@ export default function ApiDocs({ currentUser, userProfile, setUserProfile }) {
             onClick={() => setActiveMainTab('exercises')}
           >
             <Trophy size={16} />
-            Exercícios Práticos ({completedCount * 50} / 2000 XP)
+            Exercícios Práticos ({completedCount * 50} / {totalXp} XP)
           </button>
           <button
             className={`main-tab-btn ${activeMainTab === 'academic' ? 'main-tab-btn--active' : ''}`}

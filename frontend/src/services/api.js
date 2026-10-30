@@ -201,8 +201,10 @@ export async function updateGameScore(gameKey, score) {
 /**
  * Obtém o ranking consolidado dos melhores jogadores (placar de líderes).
  */
-export async function getLeaderboard() {
-  const response = await api.get('/api/users/leaderboard');
+export async function getLeaderboard(kind = 'score') {
+  const response = await api.get('/api/users/leaderboard', {
+    params: kind === 'learning' ? { kind: 'learning' } : undefined,
+  });
   return response.data;
 }
 

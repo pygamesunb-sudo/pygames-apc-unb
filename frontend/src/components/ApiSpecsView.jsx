@@ -75,6 +75,13 @@ export default function ApiSpecsView({
               </option>
             ))}
           </optgroup>
+          <optgroup label="v2 · Tutores agentes de aprendizagem" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>
+            {endpointsSpec.filter(e => e.tag === 'tutors').map(ep => (
+              <option key={ep.id} value={ep.id} style={{ background: 'var(--bg-card)' }}>
+                {ep.method} {ep.path} — {ep.summary}
+              </option>
+            ))}
+          </optgroup>
         </select>
       </div>
 

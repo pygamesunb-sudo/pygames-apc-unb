@@ -423,6 +423,352 @@ const response = await fetch(url, {
 
 const data = await response.json();
 console.log(data);`
+  },
+  {
+    id: 'tutor-chat',
+    tag: 'tutors',
+    version: 'v2',
+    method: 'POST',
+    path: '/api/tutors/chat',
+    summary: 'Conversa com um agente de aprendizagem',
+    description: 'Envia uma mensagem para um tutor. O prompt fica no servidor. Modos: apc (Tutor APC, LOGAN), python (Tutor Python, CAIO), debug (Debugador, DEBI), practice (Treinador de Exercícios, TITO), exercise_generator (Tutor de Exercícios, MIRA), assistant (assistente flutuante) e exercise (exercício já fixado). focus_mode deixa a resposta em uma etapa. Se use_custom_key for verdadeiro e gemini_api_key vier preenchida, essa chave vale; senão o servidor usa a chave do ambiente. A ação generate, só no modo exercise_generator, pede theme, topic, difficulty, input_type e output_type e devolve o exercício sem a solução de referência. Limite diário responde 429. Sem chave configurada, 503 com tutor_ai_not_configured.',
+    authRequired: true,
+    params: [
+      { name: 'mode', type: 'string', required: true, description: 'apc, python, debug, practice, exercise_generator, assistant ou exercise.' },
+      { name: 'message', type: 'string', required: false, description: 'Fala do aluno. Obrigatória no chat. Não é usada para gerar o exercício.' },
+      { name: 'action', type: 'string', required: false, description: 'chat (padrão) ou generate. generate só existe na MIRA.' },
+      { name: 'conversation_id', type: 'string', required: false, description: 'Conversa já aberta. No chat da MIRA, precisa existir e ter o exercício gerado.' },
+      { name: 'surface', type: 'string', required: false, description: 'page ou floating.' },
+      { name: 'code', type: 'string', required: false, description: 'Código atual do aluno. O tutor não devolve a solução pronta.' },
+      { name: 'focus_mode', type: 'boolean', required: false, description: 'Uma etapa e uma pergunta por resposta.' },
+      { name: 'problem_id', type: 'string', required: false, description: 'Exercício da plataforma, quando a conversa está ligada a um problema.' },
+      { name: 'theme', type: 'string', required: false, description: 'Tema livre da MIRA, obrigatório em action generate.' },
+      { name: 'topic', type: 'string', required: false, description: 'Conteúdo: condicionais, while, for, listas, funcoes e os demais rótulos do gerador.' },
+      { name: 'difficulty', type: 'string', required: false, description: 'facil, medio ou dificil.' },
+      { name: 'input_type', type: 'string', required: false, description: 'inteiro, decimal, string, varios_numeros, lista ou automatico.' },
+      { name: 'output_type', type: 'string', required: false, description: 'numero, texto, booleano, lista ou automatico.' },
+      { name: 'gemini_api_key', type: 'string', required: false, description: 'Chave do navegador. Só é usada quando use_custom_key é verdadeiro.' },
+      { name: 'use_custom_key', type: 'boolean', required: false, description: 'Se verdadeiro, a chave enviada tem prioridade sobre a do ambiente.' }
+    ],
+    defaultPayload: {
+      mode: 'apc',
+      message: 'Como eu começo a pensar neste exercício?',
+      surface: 'page',
+      focus_mode: false,
+      use_custom_key: false,
+      gemini_api_key: ''
+    },
+    pythonSnippet: (url, payload) => `import requests
+
+url = "${url}/api/tutors/chat"
+
+headers = {
+    "Authorization": "Bearer SEU_FIREBASE_ID_TOKEN",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "mode": "${payload.mode || 'apc'}",
+    "message": "${payload.message || 'oi'}",
+    "surface": "${payload.surface || 'page'}",
+    "focus_mode": ${payload.focus_mode ? 'True' : 'False'},
+    "use_custom_key": ${payload.use_custom_key ? 'True' : 'False'},
+    "gemini_api_key": "${payload.gemini_api_key || ''}"
+}
+
+try:
+    response = requests.post(url, json=payload, headers=headers)
+    response.raise_for_status()
+    dados = response.json()
+    print(dados.get("reply"))
+    print("Conversa:", dados.get("conversation_id"))
+except requests.exceptions.HTTPError as err:
+    print(f"Erro HTTP {response.status_code}: {response.text}")`,
+    curlSnippet: (url, payload) => `curl -X POST "${url}/api/tutors/chat" \\
+  -H "Authorization: Bearer SEU_FIREBASE_ID_TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '${JSON.stringify(payload, null, 2)}'`,
+    jsSnippet: (url, payload) => `const url = "${url}/api/tutors/chat";
+
+const response = await fetch(url, {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer SEU_FIREBASE_ID_TOKEN',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify(${JSON.stringify(payload, null, 2)})
+});
+
+const data = await response.json();
+console.log(data);`
+  },
+  {
+    id: 'tutor-exercises',
+    tag: 'tutors',
+    version: 'v2',
+    method: 'POST',
+    path: '/api/tutors/exercises',
+    summary: 'Gera um exercício do tutor',
+    description: 'Cria um exercício original de APC a partir do conteúdo e da dificuldade. A resposta pública não inclui a solução. O chat da MIRA usa POST /api/tutors/chat com action generate; esta rota permanece para o gerador direto.',
+    authRequired: true,
+    params: [
+      { name: 'topic', type: 'string', required: true, description: 'entrada_saida, variaveis, strings, condicionais, while, for, listas, funcoes ou recursao.' },
+      { name: 'difficulty', type: 'string', required: true, description: 'facil, medio ou dificil.' },
+      { name: 'gemini_api_key', type: 'string', required: false, description: 'Chave do navegador, usada só com use_custom_key.' },
+      { name: 'use_custom_key', type: 'boolean', required: false, description: 'Prioriza a chave enviada.' }
+    ],
+    defaultPayload: {
+      topic: 'condicionais',
+      difficulty: 'facil',
+      gemini_api_key: '',
+      use_custom_key: false
+    },
+    pythonSnippet: (url, payload) => `import requests
+
+url = "${url}/api/tutors/exercises"
+
+headers = {
+    "Authorization": "Bearer SEU_FIREBASE_ID_TOKEN",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "topic": "${payload.topic || 'condicionais'}",
+    "difficulty": "${payload.difficulty || 'facil'}",
+    "gemini_api_key": "${payload.gemini_api_key || ''}",
+    "use_custom_key": ${payload.use_custom_key ? 'True' : 'False'}
+}
+
+try:
+    response = requests.post(url, json=payload, headers=headers)
+    response.raise_for_status()
+    dados = response.json()
+    print(dados.get("titulo") or dados.get("title"))
+except requests.exceptions.HTTPError as err:
+    print(f"Erro HTTP {response.status_code}: {response.text}")`,
+    curlSnippet: (url, payload) => `curl -X POST "${url}/api/tutors/exercises" \\
+  -H "Authorization: Bearer SEU_FIREBASE_ID_TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '${JSON.stringify(payload, null, 2)}'`,
+    jsSnippet: (url, payload) => `const url = "${url}/api/tutors/exercises";
+
+const response = await fetch(url, {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer SEU_FIREBASE_ID_TOKEN',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify(${JSON.stringify(payload, null, 2)})
+});
+
+const data = await response.json();
+console.log(data);`
+  },
+  {
+    id: 'tutor-conversations',
+    tag: 'tutors',
+    version: 'v2',
+    method: 'GET',
+    path: '/api/tutors/conversations',
+    summary: 'Lista conversas dos tutores',
+    description: 'Devolve só os metadados das conversas do usuário autenticado, da mais recente para a mais antiga. As mensagens completas vêm ao abrir uma conversa. Sem a credencial do Firestore no ambiente local, a lista fica na memória deste processo.',
+    authRequired: true,
+    params: [
+      { name: 'include_archived', type: 'boolean', required: false, description: 'Inclui conversas arquivadas. Padrão: false.' },
+      { name: 'limit', type: 'integer', required: false, description: 'Quantidade, de 1 a 50. Padrão: 20.' },
+      { name: 'before', type: 'string', required: false, description: 'Cursor da página anterior, no formato da data da última mensagem.' }
+    ],
+    defaultPayload: null,
+    pythonSnippet: (url) => `import requests
+
+url = "${url}/api/tutors/conversations"
+
+headers = {
+    "Authorization": "Bearer SEU_FIREBASE_ID_TOKEN"
+}
+
+params = {
+    "include_archived": False,
+    "limit": 20
+}
+
+try:
+    response = requests.get(url, headers=headers, params=params)
+    response.raise_for_status()
+    for conversa in response.json():
+        print(conversa.get("title"), conversa.get("mode"), conversa.get("conversation_id"))
+except requests.exceptions.HTTPError as err:
+    print(f"Erro HTTP {response.status_code}: {response.text}")`,
+    curlSnippet: (url) => `curl -X GET "${url}/api/tutors/conversations?include_archived=false&limit=20" \\
+  -H "Authorization: Bearer SEU_FIREBASE_ID_TOKEN"`,
+    jsSnippet: (url) => `const url = "${url}/api/tutors/conversations?include_archived=false&limit=20";
+
+const response = await fetch(url, {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer SEU_FIREBASE_ID_TOKEN'
+  }
+});
+
+const data = await response.json();
+console.log(data);`
+  },
+  {
+    id: 'tutor-conversation-create',
+    tag: 'tutors',
+    version: 'v2',
+    method: 'POST',
+    path: '/api/tutors/conversations',
+    summary: 'Abre uma conversa de tutor',
+    description: 'Cria uma conversa vazia para o modo escolhido. O dono é o uid do token. O cliente não envia o id do usuário.',
+    authRequired: true,
+    params: [
+      { name: 'mode', type: 'string', required: true, description: 'apc, python, debug, practice, exercise_generator, assistant ou exercise.' },
+      { name: 'surface', type: 'string', required: false, description: 'page ou floating. Padrão: page.' }
+    ],
+    defaultPayload: {
+      mode: 'python',
+      surface: 'page'
+    },
+    pythonSnippet: (url, payload) => `import requests
+
+url = "${url}/api/tutors/conversations"
+
+headers = {
+    "Authorization": "Bearer SEU_FIREBASE_ID_TOKEN",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "mode": "${payload.mode || 'python'}",
+    "surface": "${payload.surface || 'page'}"
+}
+
+try:
+    response = requests.post(url, json=payload, headers=headers)
+    response.raise_for_status()
+    print(response.json().get("conversation_id"))
+except requests.exceptions.HTTPError as err:
+    print(f"Erro HTTP {response.status_code}: {response.text}")`,
+    curlSnippet: (url, payload) => `curl -X POST "${url}/api/tutors/conversations" \\
+  -H "Authorization: Bearer SEU_FIREBASE_ID_TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '${JSON.stringify(payload, null, 2)}'`,
+    jsSnippet: (url, payload) => `const url = "${url}/api/tutors/conversations";
+
+const response = await fetch(url, {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer SEU_FIREBASE_ID_TOKEN',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify(${JSON.stringify(payload, null, 2)})
+});
+
+const data = await response.json();
+console.log(data);`
+  },
+  {
+    id: 'tutor-conversation-detail',
+    tag: 'tutors',
+    version: 'v2',
+    method: 'GET',
+    path: '/api/tutors/conversations/{conversation_id}',
+    summary: 'Abre uma conversa e as mensagens',
+    description: 'Carrega título, modo e mensagens de uma conversa do próprio usuário. Troque {conversation_id} pelo id retornado na lista. Conversa de outra pessoa responde 404.',
+    authRequired: true,
+    params: [
+      { name: 'conversation_id', type: 'string', required: true, description: 'Id da conversa, no caminho da URL.' }
+    ],
+    defaultPayload: null,
+    pythonSnippet: (url) => `import requests
+
+conversation_id = "ID_DA_CONVERSA"
+url = f"${url}/api/tutors/conversations/{conversation_id}"
+
+headers = {
+    "Authorization": "Bearer SEU_FIREBASE_ID_TOKEN"
+}
+
+try:
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+    dados = response.json()
+    print(dados.get("title"), len(dados.get("messages") or []))
+except requests.exceptions.HTTPError as err:
+    print(f"Erro HTTP {response.status_code}: {response.text}")`,
+    curlSnippet: (url) => `curl -X GET "${url}/api/tutors/conversations/ID_DA_CONVERSA" \\
+  -H "Authorization: Bearer SEU_FIREBASE_ID_TOKEN"`,
+    jsSnippet: (url) => `const conversationId = "ID_DA_CONVERSA";
+const url = "${url}/api/tutors/conversations/" + conversationId;
+
+const response = await fetch(url, {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer SEU_FIREBASE_ID_TOKEN'
+  }
+});
+
+const data = await response.json();
+console.log(data);`
+  },
+  {
+    id: 'tutor-conversation-update',
+    tag: 'tutors',
+    version: 'v2',
+    method: 'PATCH',
+    path: '/api/tutors/conversations/{conversation_id}',
+    summary: 'Renomeia ou arquiva uma conversa',
+    description: 'Altera o título, de até 80 caracteres, ou marca a conversa como arquivada. Não apaga a conversa. Envie ao menos um dos campos.',
+    authRequired: true,
+    params: [
+      { name: 'conversation_id', type: 'string', required: true, description: 'Id da conversa, no caminho da URL.' },
+      { name: 'title', type: 'string', required: false, description: 'Novo título, no máximo 80 caracteres.' },
+      { name: 'archived', type: 'boolean', required: false, description: 'true arquiva. false devolve a conversa para a lista.' }
+    ],
+    defaultPayload: {
+      title: 'Loop while',
+      archived: false
+    },
+    pythonSnippet: (url, payload) => `import requests
+
+conversation_id = "ID_DA_CONVERSA"
+url = f"${url}/api/tutors/conversations/{conversation_id}"
+
+headers = {
+    "Authorization": "Bearer SEU_FIREBASE_ID_TOKEN",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "title": "${payload.title || 'Loop while'}",
+    "archived": ${payload.archived ? 'True' : 'False'}
+}
+
+try:
+    response = requests.patch(url, json=payload, headers=headers)
+    response.raise_for_status()
+    print(response.json().get("title"))
+except requests.exceptions.HTTPError as err:
+    print(f"Erro HTTP {response.status_code}: {response.text}")`,
+    curlSnippet: (url, payload) => `curl -X PATCH "${url}/api/tutors/conversations/ID_DA_CONVERSA" \\
+  -H "Authorization: Bearer SEU_FIREBASE_ID_TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '${JSON.stringify(payload, null, 2)}'`,
+    jsSnippet: (url, payload) => `const conversationId = "ID_DA_CONVERSA";
+const url = "${url}/api/tutors/conversations/" + conversationId;
+
+const response = await fetch(url, {
+  method: 'PATCH',
+  headers: {
+    'Authorization': 'Bearer SEU_FIREBASE_ID_TOKEN',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify(${JSON.stringify(payload, null, 2)})
+});
+
+const data = await response.json();
+console.log(data);`
   }
 ];
 
@@ -434,5 +780,6 @@ export const EXERCISE_TOPICS = [
   { id: 'user-profile', label: 'Perfil do Jogador' },
   { id: 'update-score', label: 'Registro de Fliperama' },
   { id: 'leaderboard', label: 'Placar de Líderes' },
-  { id: 'gemini-config', label: 'Chaves do Gemini' }
+  { id: 'gemini-config', label: 'Chaves do Gemini' },
+  { id: 'tutors', label: 'Tutores v2' }
 ];

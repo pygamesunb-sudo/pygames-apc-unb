@@ -34,6 +34,7 @@ export default function ApiSlideshowView({ isOpen, onClose, initialSlideId = 'vi
 
   const slides = [
     { id: 'visao', label: 'Visão & Letramento', icon: BookOpen },
+    { id: 'v2', label: 'Funcionalidades da v2', icon: Sparkles },
     { id: 'interface', label: 'Design & Interface', icon: Layout },
     { id: 'dados', label: 'Estrutura de Dados', icon: Database },
     { id: 'algoritmo', label: 'Pipeline & Sandbox', icon: Cpu },
@@ -212,6 +213,27 @@ export default function ApiSlideshowView({ isOpen, onClose, initialSlideId = 'vi
           </div>
         )}
 
+        {currentSlide.id === 'v2' && (
+          <div className="slide-content-layout">
+            <div className="slide-card">
+              <h3 className="slide-card-title">
+                <Sparkles size={24} className="title-icon" />
+                Funcionalidades novas da v2
+              </h3>
+              <p className="slide-text" style={{ marginBottom: 12 }}>Uma experiência prática, guiada por exercícios e mediada por tutores de IA. A fórmula antiga permanece no slide anterior.</p>
+              <p className="slide-text" style={{ marginBottom: 20 }}>
+                A v2 acrescenta os tutores agentes de aprendizagem e a documentação da API, sem substituir o gerador de exercícios, o fliperama nem o placar geral.
+              </p>
+              <div className="slide-features-list">
+                <div className="feature-item"><span className="badge-bullet">01</span><div><strong>Tutores agentes de aprendizagem:</strong> LOGAN (APC), CAIO (Python), DEBI (debug), TITO (treinador) e MIRA (exercícios). O modo foco responde uma etapa por vez e nenhum tutor entrega o programa pronto.</div></div>
+                <div className="feature-item"><span className="badge-bullet">02</span><div><strong>Histórico:</strong> o aluno retoma, renomeia ou arquiva a conversa, inclusive o exercício gerado pela MIRA.</div></div>
+                <div className="feature-item"><span className="badge-bullet">03</span><div><strong>Placar de aprendizados:</strong> XP de estudo e desafios resolvidos, separado do ranking de jogos.</div></div>
+                <div className="feature-item"><span className="badge-bullet">04</span><div><strong>Docs API v2:</strong> chat, geração, lista e retomada de conversas, com os exercícios práticos Tutores v2.</div></div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {currentSlide.id === 'interface' && (
           <div className="slide-content-layout">
             <div className="slide-card text-center" style={{ padding: '30px 40px' }}>
@@ -242,7 +264,7 @@ export default function ApiSlideshowView({ isOpen, onClose, initialSlideId = 'vi
                 <div className="slide-mini-card">
                   <Users size={24} style={{ color: 'var(--accent-warning)', marginBottom: 12 }} />
                   <h4>Leaderboard</h4>
-                  <p>Ranking social e estatísticas em tempo real, integrando pontuações arcade e Coding Points.</p>
+                  <p>Ranking social e estatísticas em tempo real, integrando pontuações arcade e Coding Points. O placar de aprendizados mostra só o XP de estudo.</p>
                 </div>
               </div>
             </div>

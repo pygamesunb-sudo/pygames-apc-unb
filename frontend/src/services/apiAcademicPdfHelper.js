@@ -250,6 +250,49 @@ export function exportAcademicPDF(apiBaseUrl = 'http://localhost:8000') {
               </tr>
             </tbody>
           </table>
+          <h2>2.1 Declaração de visão (v2)</h2>
+          <p>Uma experiência prática, guiada por exercícios e mediada por tutores de IA. Esta declaração complementa a fórmula anterior.</p>
+          <table style="margin-top: 0.5cm;">
+            <thead>
+              <tr>
+                <th style="width: 25%;">Fórmula</th>
+                <th>Declaração da v2</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="bold">PARA</td>
+                <td>Estudantes iniciantes em programação, com foco em APC e potencial de aplicação na educação básica, inclusive alunos que estudam melhor uma etapa de cada vez.</td>
+              </tr>
+              <tr>
+                <td class="bold">QUE</td>
+                <td>Precisam desenvolver raciocínio algorítmico e aprender Python com autonomia.</td>
+              </tr>
+              <tr>
+                <td class="bold">O</td>
+                <td>Pygame-APC é um ambiente gamificado de aprendizagem prática, com exercícios, execução de código, histórico e tutoria por IA.</td>
+              </tr>
+              <tr>
+                <td class="bold">QUE</td>
+                <td>Acompanha o contexto do exercício, as tentativas e o código para oferecer ajuda graduada.</td>
+              </tr>
+              <tr>
+                <td class="bold">AO CONTRÁRIO</td>
+                <td>De ferramentas que apenas entregam respostas ou listas repetitivas sem contexto pedagógico.</td>
+              </tr>
+              <tr>
+                <td class="bold">NOSSA SOLUÇÃO</td>
+                <td>Estimula raciocínio, prática frequente, feedback rápido, autonomia e progressão visível.</td>
+              </tr>
+            </tbody>
+          </table>
+          <h2>2.2 Funcionalidades novas da v2</h2>
+          <ul>
+            <li><strong>Tutores agentes de aprendizagem:</strong> LOGAN (Tutor APC), CAIO (Tutor Python), DEBI (Debugador), TITO (Treinador de Exercícios) e MIRA (Tutor de Exercícios). O diálogo é socrático e o modo foco entrega uma etapa por vez.</li>
+            <li><strong>Histórico de conversas:</strong> o aluno retoma, renomeia ou arquiva o diálogo, inclusive o exercício gerado pela MIRA.</li>
+            <li><strong>Placar de aprendizados:</strong> ordena o XP de programação e a quantidade de desafios resolvidos, separado do ranking de jogos.</li>
+            <li><strong>Documentação da API v2:</strong> rotas de chat, geração, lista e retomada de conversas, com exercícios práticos Tutores v2.</li>
+          </ul>
         </div>
 
         <!-- SEÇÃO 3 -->
@@ -260,7 +303,8 @@ export function exportAcademicPDF(apiBaseUrl = 'http://localhost:8000') {
             <li><strong>Fliperama Retro:</strong> Emulador leve escrito em JavaScript contendo jogos clássicos de física simples (Snake, Doodle Ninja, Bug Invaders) que servem de distração recreativa e estímulo competitivo enquanto as chamadas assíncronas do pipeline do Gemini são processadas;</li>
             <li><strong>Geração Inteligente:</strong> Entrada intuitiva onde o estudante digita o tema desejado (ex: loops, vetores, ordenação) e a dificuldade, enviando um sinal HTTP para o interpretador de IA;</li>
             <li><strong>Arena de Codificação:</strong> Área de texto limpa com suporte a recuo inteligente, console de erros de sintaxe detalhado e exibição analítica de casos de teste unitários;</li>
-            <li><strong>Placar de Líderes (Leaderboard):</strong> Agregador social que exibe o ranking consolidado em tempo real, integrando pontuações arcade e Coding Points obtidos na resolução de desafios Python.</li>
+            <li><strong>Placar de Líderes (Leaderboard):</strong> Agregador social que exibe o ranking consolidado em tempo real, integrando pontuações arcade e Coding Points obtidos na resolução de desafios Python. O placar de aprendizados mostra somente o XP de estudo e os desafios resolvidos.</li>
+            <li><strong>Tutores agentes de aprendizagem (v2):</strong> cinco tutores acompanham o exercício atual sem revelar a solução de referência.</li>
           </ul>
         </div>
 

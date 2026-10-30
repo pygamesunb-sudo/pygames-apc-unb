@@ -422,6 +422,33 @@ async def update_user_game_score(uid: str, email: str, name: str, game_key: str,
         return profile
 
 
+def learning_board_row(profile: dict) -> dict | None:
+    """Linha publica do placar de aprendizados. Nao leva chave nem e-mail."""
+    points = int(profile.get("coding_points") or 0)
+    solved = profile.get("solved_problems") or []
+    solved_count = len(solved) if isinstance(solved, list) else 0
+    if points <= 0 and solved_count <= 0:
+        return None
+    return {
+        "uid": profile.get("uid") or "",
+        "name": profile.get("name") or "",
+        "photo_url": profile.get("photo_url") or "",
+        "coding_points": points,
+        "solved_count": solved_count,
+    }
+
+
+async def get_learning_leaderboard_data() -> list[dict]:
+    """Ordena pelo XP de programacao, sem os pontos de fliperama."""
+    rows = await get_leaderboard_data()
+    ranked = []
+    for profile in sorted(rows, key=lambda item: int(item.get("coding_points") or 0), reverse=True):
+        public = learning_board_row(profile)
+        if public:
+            ranked.append(public)
+    return ranked[:50]
+
+
 async def get_leaderboard_data() -> list[dict]:
     """Retorna os melhores usuarios ordenados por total_score descendente."""
     global _use_local_fallback

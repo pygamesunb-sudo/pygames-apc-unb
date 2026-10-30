@@ -491,5 +491,66 @@ export const API_EXERCISES = {
         { input: [''], expected: { Authorization: 'Bearer ' }, inputStr: '""', expectedStr: '{"Authorization": "Bearer "}' }
       ]
     }
+  ],
+  tutors: [
+    {
+      id: 'ex-tutor-1',
+      title: 'Desafio 9.1: Montar Mensagem para o Tutor',
+      desc: 'Escreva uma função criar_mensagem_tutor(mode, message) que retorne um dicionário com as chaves "mode" e "message". Os modos dos agentes são apc (LOGAN), python (CAIO), debug (DEBI), practice (TITO) e exercise_generator (MIRA).',
+      initialCode: 'def criar_mensagem_tutor(mode, message):\n    # Monte o dicionario da mensagem\n    ',
+      functionName: 'criar_mensagem_tutor',
+      testCases: [
+        { input: ['apc', 'como eu comeco?'], expected: { mode: 'apc', message: 'como eu comeco?' }, inputStr: '"apc", "como eu comeco?"', expectedStr: '{"mode": "apc", "message": "como eu comeco?"}' },
+        { input: ['python', 'oi'], expected: { mode: 'python', message: 'oi' }, inputStr: '"python", "oi"', expectedStr: '{"mode": "python", "message": "oi"}' },
+        { input: ['debug', 'deu erro'], expected: { mode: 'debug', message: 'deu erro' }, inputStr: '"debug", "deu erro"', expectedStr: '{"mode": "debug", "message": "deu erro"}' }
+      ]
+    },
+    {
+      id: 'ex-tutor-2',
+      title: 'Desafio 9.2: Validar o Agente',
+      desc: 'Crie uma função validar_modo_tutor(mode) que retorne True se mode for "apc", "python", "debug", "practice" ou "exercise_generator". Qualquer outro valor retorna False.',
+      initialCode: 'def validar_modo_tutor(mode):\n    # Retorne True somente para os modos dos tutores\n    ',
+      functionName: 'validar_modo_tutor',
+      testCases: [
+        { input: ['apc'], expected: true, inputStr: '"apc"', expectedStr: 'True' },
+        { input: ['exercise_generator'], expected: true, inputStr: '"exercise_generator"', expectedStr: 'True' },
+        { input: ['ranking'], expected: false, inputStr: '"ranking"', expectedStr: 'False' }
+      ]
+    },
+    {
+      id: 'ex-tutor-3',
+      title: 'Desafio 9.3: URL do Chat do Tutor',
+      desc: 'Escreva uma função obter_url_tutor(base_url) que receba a URL base e retorne o caminho completo de "/api/tutors/chat", sem barra duplicada ou faltando.',
+      initialCode: 'def obter_url_tutor(base_url):\n    # Remova a barra final da base, se houver, e junte o caminho\n    ',
+      functionName: 'obter_url_tutor',
+      testCases: [
+        { input: ['http://localhost:8000'], expected: 'http://localhost:8000/api/tutors/chat', inputStr: '"http://localhost:8000"', expectedStr: '"http://localhost:8000/api/tutors/chat"' },
+        { input: ['https://api.apc.com/'], expected: 'https://api.apc.com/api/tutors/chat', inputStr: '"https://api.apc.com/"', expectedStr: '"https://api.apc.com/api/tutors/chat"' },
+        { input: ['http://127.0.0.1:8000'], expected: 'http://127.0.0.1:8000/api/tutors/chat', inputStr: '"http://127.0.0.1:8000"', expectedStr: '"http://127.0.0.1:8000/api/tutors/chat"' }
+      ]
+    },
+    {
+      id: 'ex-tutor-4',
+      title: 'Desafio 9.4: Ligar o Modo Foco',
+      desc: 'Escreva uma função payload_foco(mode, message) que retorne o dicionário com "mode", "message", "surface" igual a "page" e "focus_mode" igual a True.',
+      initialCode: 'def payload_foco(mode, message):\n    # Monte o payload com o modo foco ligado\n    ',
+      functionName: 'payload_foco',
+      testCases: [
+        { input: ['apc', 'explica o while'], expected: { mode: 'apc', message: 'explica o while', surface: 'page', focus_mode: true }, inputStr: '"apc", "explica o while"', expectedStr: '{"mode": "apc", "message": "explica o while", "surface": "page", "focus_mode": True}' },
+        { input: ['practice', 'proxima etapa'], expected: { mode: 'practice', message: 'proxima etapa', surface: 'page', focus_mode: true }, inputStr: '"practice", "proxima etapa"', expectedStr: '{"mode": "practice", "message": "proxima etapa", "surface": "page", "focus_mode": True}' }
+      ]
+    },
+    {
+      id: 'ex-tutor-5',
+      title: 'Desafio 9.5: Contar Conversas do Tutor',
+      desc: 'Crie uma função contar_conversas(lista) que retorne quantas conversas existem na lista recebida de GET /api/tutors/conversations.',
+      initialCode: 'def contar_conversas(lista):\n    # Retorne a quantidade de conversas\n    ',
+      functionName: 'contar_conversas',
+      testCases: [
+        { input: [[{ conversation_id: 'a' }, { conversation_id: 'b' }]], expected: 2, inputStr: '[{"conversation_id": "a"}, {"conversation_id": "b"}]', expectedStr: '2' },
+        { input: [[]], expected: 0, inputStr: '[]', expectedStr: '0' },
+        { input: [[{ conversation_id: 'c' }]], expected: 1, inputStr: '[{"conversation_id": "c"}]', expectedStr: '1' }
+      ]
+    }
   ]
 };

@@ -38,6 +38,7 @@ const VIEW = {
   EXERCISE: 'exercise', 
   MINIGAME: 'minigame',
   LEADERBOARD: 'leaderboard',
+  LEARNING: 'aprendizados',
   HISTORY: 'history',
   DOCS: 'docs',
   TUTORS: 'tutors',
@@ -432,8 +433,12 @@ export default function App() {
             </div>
           )}
 
-          {view === VIEW.LEADERBOARD && (
-            <Leaderboard onBack={handleBack} />
+          {(view === VIEW.LEADERBOARD || view === VIEW.LEARNING) && (
+            <Leaderboard
+              key={view}
+              onBack={handleBack}
+              initialBoard={view === VIEW.LEARNING ? 'learning' : 'score'}
+            />
           )}
 
           {view === VIEW.HISTORY && (

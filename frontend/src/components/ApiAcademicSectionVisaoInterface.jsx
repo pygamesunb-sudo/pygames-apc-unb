@@ -99,6 +99,76 @@ export function VisaoSection() {
           </div>
         </div>
       </div>
+
+      <div className="card vision-statement-card">
+        <h3 className="vision-title">
+          <Sparkles size={18} className="vision-title-icon" />
+          Declaração de visão (v2)
+        </h3>
+        <p className="academic-text">Uma experiência prática, guiada por exercícios e mediada por tutores de IA.</p>
+        <div className="vision-formula-grid">
+          <div className="formula-row">
+            <span className="formula-label">PARA</span>
+            <span className="formula-value">estudantes iniciantes em programação, com foco em APC e potencial de aplicação na educação básica, inclusive alunos que estudam melhor uma etapa de cada vez.</span>
+          </div>
+          <div className="formula-row">
+            <span className="formula-label">QUE</span>
+            <span className="formula-value">precisam desenvolver raciocínio algorítmico e aprender Python com autonomia.</span>
+          </div>
+          <div className="formula-row">
+            <span className="formula-label">O</span>
+            <span className="formula-value"><strong>Pygame-APC</strong> é um ambiente gamificado de aprendizagem prática, com exercícios, execução de código, histórico e tutoria por IA.</span>
+          </div>
+          <div className="formula-row">
+            <span className="formula-label">QUE</span>
+            <span className="formula-value">acompanha o contexto do exercício, as tentativas e o código para oferecer ajuda graduada.</span>
+          </div>
+          <div className="formula-row">
+            <span className="formula-label">AO CONTRÁRIO</span>
+            <span className="formula-value">de ferramentas que apenas entregam respostas ou listas repetitivas sem contexto pedagógico.</span>
+          </div>
+          <div className="formula-row">
+            <span className="formula-label">NOSSA SOLUÇÃO</span>
+            <span className="formula-value">estimula raciocínio, prática frequente, feedback rápido, autonomia e progressão visível.</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="card">
+        <h3 className="section-title">
+          <Sparkles size={18} className="title-icon" />
+          Funcionalidades novas da v2
+        </h3>
+        <p className="academic-text">
+          A v2 acrescenta os tutores agentes de aprendizagem e a documentação correspondente, sem substituir o gerador de exercícios, o fliperama nem o placar geral.
+        </p>
+        <div className="grid grid-2" style={{ marginTop: 16 }}>
+          <div className="card sub-card">
+            <h4 style={{ color: 'var(--text-primary)', marginBottom: 8 }}>Tutores agentes de aprendizagem</h4>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>
+              LOGAN (Tutor APC), CAIO (Tutor Python), DEBI (Debugador), TITO (Treinador de Exercícios) e MIRA (Tutor de Exercícios). Cada um conduz o raciocínio e não entrega o programa pronto. O modo foco responde uma etapa por vez.
+            </p>
+          </div>
+          <div className="card sub-card">
+            <h4 style={{ color: 'var(--text-primary)', marginBottom: 8 }}>Histórico e progressão</h4>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>
+              As conversas podem ser retomadas, renomeadas e arquivadas. O placar de aprendizados ordena o XP de programação e os desafios resolvidos, separado do ranking de jogos.
+            </p>
+          </div>
+          <div className="card sub-card">
+            <h4 style={{ color: 'var(--text-primary)', marginBottom: 8 }}>API v2 dos tutores</h4>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>
+              A Docs API ganhou a seção v2, com chat, geração de exercício, lista e retomada de conversas, além dos exercícios práticos Tutores v2.
+            </p>
+          </div>
+          <div className="card sub-card">
+            <h4 style={{ color: 'var(--text-primary)', marginBottom: 8 }}>Chave de IA</h4>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>
+              Com a chave personalizada ligada, vale a chave do aluno. Desligada, o tutor usa a chave do ambiente. O prompt pedagógico permanece só no servidor.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -142,7 +212,7 @@ export function InterfaceSection() {
             <Users size={20} style={{ color: 'var(--accent-warning)', marginBottom: 8 }} />
             <h4 style={{ color: 'var(--text-primary)', marginBottom: 6 }}>Leaderboard</h4>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-              Estatísticas consolidadas agregando pontos de codificação Python (Coding Points) e conquistas nos jogos arcade retrô.
+              Estatísticas consolidadas agregando pontos de codificação Python (Coding Points) e conquistas nos jogos arcade retrô. O placar de aprendizados mostra só o XP de estudo.
             </p>
           </div>
         </div>
