@@ -1,9 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
+import os
 
 from app.routers import beecrowd, problems, ready_exercises, submissions, tutors, users
-from app.config import settings
+from app.config import ENV_PATH, settings
 
 logging.basicConfig(
     level=logging.INFO,
@@ -26,6 +27,8 @@ def _cors_origins() -> list[str]:
     local_origins = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
         "http://localhost:4173",
         "http://127.0.0.1:4173",
         "https://pygamesapcprojeto.web.app",
@@ -61,7 +64,18 @@ app.include_router(ready_exercises.router)
 @app.on_event("startup")
 def startup_event():
     logger = logging.getLogger(__name__)
-    logger.info("FastAPI startup event triggered. Settings loaded from environment/local .env.")
+    env_loaded = os.path.isfile(ENV_PATH)
+    openrouter = (settings.openrouter_api_key or "").strip()
+    openrouter_state = "definida" if openrouter and openrouter != "sua_chave_aqui" else "vazia"
+    credentials_path = settings.resolved_credentials_path()
+    credentials_state = "encontrada" if credentials_path and os.path.isfile(credentials_path) else "ausente"
+    logger.info(
+        "Ambiente local: env_file=%s projeto=%s openrouter=%s credencial_firebase=%s",
+        "carregado" if env_loaded else "ausente",
+        settings.resolved_firebase_project_id() or "ausente",
+        openrouter_state,
+        credentials_state,
+    )
 
 @app.get("/health", tags=["health"])
 @app.get("/api/health", tags=["health"])

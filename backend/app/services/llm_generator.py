@@ -5,6 +5,7 @@ import logging
 
 from app.models.schemas import GeneratedProblem, TestCase
 from app.services.ai.client import chat_completion
+from app.services.ai.gemini_client import resolve_gemini_key
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +66,7 @@ async def _call_gemini_api(messages: list[dict], api_key: str, temperature: floa
             "parts": [{"text": "Gere o problema solicitado."}]
         })
         
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key={api_key}"
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent"
     
     payload = {
         "contents": contents,
@@ -83,7 +84,11 @@ async def _call_gemini_api(messages: list[dict], api_key: str, temperature: floa
     logger.info("Chamando a API direta do Gemini 3.1 Flash-Lite com a chave do usuario.")
     
     async with httpx.AsyncClient(timeout=120.0) as client:
-        response = await client.post(url, json=payload)
+        response = await client.post(
+            url,
+            headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
+            json=payload,
+        )
         response.raise_for_status()
         data = response.json()
         
@@ -147,8 +152,9 @@ async def generate_problem(
         {"role": "user", "content": user_message},
     ]
 
-    if use_custom_key and gemini_api_key:
-        raw_response = await _call_gemini_api(messages, api_key=gemini_api_key, temperature=0.8)
+    chosen_key = resolve_gemini_key(gemini_api_key, use_custom_key)
+    if chosen_key:
+        raw_response = await _call_gemini_api(messages, api_key=chosen_key, temperature=0.8)
     else:
         raw_response = await _call_llm(messages, temperature=0.8)
 

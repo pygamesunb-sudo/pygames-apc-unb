@@ -11,6 +11,9 @@ export function tutorErrorMessage(error) {
   if (detail === 'tutor_ai_not_configured') {
     return 'O Tutor IA ainda não está disponível neste ambiente.';
   }
+  if (detail === 'tutor_exercise_invalid') {
+    return 'Não consegui montar um exercício válido. Tente gerar de novo.';
+  }
   if (status === 429 || code === 'tutor_daily_limit') return LIMIT_MESSAGE;
   if (code === 'tutor_provider_rate_limit') {
     return 'O tutor está com muitas solicitações agora. Tente de novo em instantes.';
@@ -31,22 +34,47 @@ export function tutorErrorMessage(error) {
   return GENERIC_MESSAGE;
 }
 
+function withFrontendGeminiKey(payload) {
+  return {
+    ...payload,
+    gemini_api_key: localStorage.getItem('gemini_api_key') || null,
+    use_custom_key: localStorage.getItem('use_custom_key') === 'true',
+  };
+}
+
 export async function generateTutorExercise(payload) {
-  const response = await api.post('/api/tutors/exercises', payload, { timeout: 70000 });
+  const response = await api.post('/api/tutors/exercises', withFrontendGeminiKey(payload), { timeout: 70000 });
   return response.data;
 }
 
 export async function sendTutorMessage(payload) {
-  const response = await api.post('/api/tutors/chat', payload, { timeout: 70000 });
+  const response = await api.post('/api/tutors/chat', withFrontendGeminiKey(payload), { timeout: 70000 });
   return response.data;
 }
 
-export async function listTutorConversations() {
-  const response = await api.get('/api/tutors/conversations', { timeout: 20000 });
+export async function listTutorConversations({ includeArchived = false, limit = 20, before } = {}) {
+  const response = await api.get('/api/tutors/conversations', {
+    timeout: 20000,
+    params: {
+      include_archived: includeArchived,
+      limit,
+      before: before || undefined,
+    },
+  });
   return response.data;
 }
 
 export async function getTutorConversation(conversationId) {
   const response = await api.get(`/api/tutors/conversations/${conversationId}`, { timeout: 20000 });
+  return response.data;
+}
+
+export async function createTutorConversation(mode, surface = 'page') {
+  const response = await api.post('/api/tutors/conversations', { mode, surface }, { timeout: 20000 });
+  return response.data;
+}
+
+export async function updateTutorConversation(conversationId, changes) {
+  const response = await api.patch(`/api/tutors/conversations/${conversationId}`, changes, { timeout: 20000 });
   return response.data;
 }

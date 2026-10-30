@@ -4,7 +4,7 @@ Firestore:
   tutor_conversations/{conversationId}
   tutor_conversations/{conversationId}/messages/{messageId}
 
-Sem Firestore, a memoria local so e usada quando o bypass de teste esta ligado.
+Sem o arquivo de credencial do Firebase, a conversa fica na memoria deste processo.
 """
 
 from __future__ import annotations
@@ -42,10 +42,26 @@ def _now() -> str:
     return f"{datetime.now(timezone.utc).isoformat()}-{_sequence:06d}"
 
 
+_memory_notice = False
+
+
 def _memory_allowed() -> bool:
+    """Memoria local nos testes e quando esta maquina nao tem credencial do Firestore."""
+    global _memory_notice
     if settings.testing_bypass_auth:
         return True
-    return os.getenv("TESTING_BYPASS_AUTH", "").strip().lower() == "true"
+    if os.getenv("TESTING_BYPASS_AUTH", "").strip().lower() == "true":
+        return True
+    credentials = settings.resolved_credentials_path()
+    if credentials and os.path.isfile(credentials):
+        return False
+    if not _memory_notice:
+        _memory_notice = True
+        logger.warning(
+            "Historico dos tutores em memoria neste processo. "
+            "Sem firebase_credentials.json ele nao sobrevive a um reinicio."
+        )
+    return True
 
 
 def _preview(text: str) -> str:
@@ -55,6 +71,58 @@ def _preview(text: str) -> str:
     return compact[:77] + "..."
 
 
+_TOPIC_LABELS = {
+    "entrada_saida": "Entrada e saída",
+    "variaveis": "Variáveis",
+    "operadores": "Operadores",
+    "condicionais": "Condicionais",
+    "while": "While",
+    "for": "For",
+    "strings": "Strings",
+    "listas": "Listas",
+    "funcoes": "Funções",
+    "recursao": "Recursão",
+}
+
+_TUTOR_NAMES = {
+    "apc": "Tutor APC",
+    "python": "Tutor Python",
+    "debug": "Debugador",
+    "practice": "Treinador de Exercícios",
+    "assistant": "Assistente",
+    "exercise": "Tutor de Exercícios",
+    "exercise_generator": "Tutor de Exercícios",
+}
+
+
+def friendly_title(conversation: dict, fallback: str = "") -> str:
+    """Titulo curto. O de exercicio usa tema e conteudo; os outros, o começo da fala."""
+    mode = conversation.get("tutor_mode") or conversation.get("mode") or ""
+    theme = (conversation.get("theme") or "").strip()
+    topic = conversation.get("topic") or ""
+    if mode == "exercise_generator" and theme:
+        content = _TOPIC_LABELS.get(topic, str(topic or "")).strip()
+        if content:
+            return f"{theme} — {content}"[:80]
+        return theme[:80]
+    words = " ".join((fallback or conversation.get("preview") or "").split())
+    if words:
+        return " ".join(words.split()[:6])[:80]
+    return _TUTOR_NAMES.get(mode, "Conversa")
+
+
+def _owner(data: dict) -> str:
+    return str(data.get("uid") or data.get("user_id") or "")
+
+
+def _belongs(data: dict, uid: str) -> bool:
+    return bool(uid) and _owner(data) == uid
+
+
+def _stamp(data: dict) -> str:
+    return data.get("last_message_at") or data.get("updated_at") or data.get("created_at") or ""
+
+
 async def create_conversation(
     *,
     uid: str,
@@ -62,6 +130,7 @@ async def create_conversation(
     surface: str,
     problem_id: str | None,
     preview: str,
+    metadata: dict | None = None,
 ) -> dict:
     conversation = {
         "conversation_id": str(uuid.uuid4()),
@@ -74,6 +143,17 @@ async def create_conversation(
         "created_at": _now(),
         "updated_at": _now(),
     }
+    for key, value in (metadata or {}).items():
+        if key not in {"conversation_id", "uid", "user_id"}:
+            conversation[key] = value
+    created_at = conversation["created_at"]
+    conversation["user_id"] = uid
+    conversation["tutor_mode"] = conversation["mode"]
+    conversation["archived"] = bool(conversation.get("archived", False))
+    conversation["last_message_at"] = conversation.get("last_message_at") or created_at
+    conversation["updated_at"] = conversation.get("updated_at") or created_at
+    if not conversation.get("title") or not conversation.get("title_custom"):
+        conversation["title"] = friendly_title(conversation, preview)
     await _save_conversation(conversation, is_new=True)
     return conversation
 
@@ -84,7 +164,7 @@ async def get_conversation(conversation_id: str, uid: str) -> dict | None:
         if not _memory_allowed():
             raise ConversationStoreError("Historico do tutor indisponivel.")
         found = _conversations.get(conversation_id)
-        if not found or found.get("uid") != uid:
+        if not found or not _belongs(found, uid):
             return None
         return dict(found)
 
@@ -96,30 +176,60 @@ async def get_conversation(conversation_id: str, uid: str) -> dict | None:
     if not doc.exists:
         return None
     data = doc.to_dict() or {}
-    if data.get("uid") != uid:
+    if not _belongs(data, uid):
         return None
     data["conversation_id"] = conversation_id
     return data
 
 
-async def list_conversations(uid: str) -> list[dict]:
+async def list_conversations(
+    uid: str,
+    *,
+    include_archived: bool = False,
+    limit: int = 20,
+    before: str | None = None,
+) -> list[dict]:
     db = firebase_service.get_db()
     if db is None:
         if not _memory_allowed():
             raise ConversationStoreError("Historico do tutor indisponivel.")
-        rows = [dict(item) for item in _conversations.values() if item.get("uid") == uid]
+        rows = [dict(item) for item in _conversations.values() if _belongs(item, uid)]
     else:
+        rows = await _list_from_firestore(db, uid)
+    if not include_archived:
+        rows = [item for item in rows if not item.get("archived")]
+    rows.sort(key=_stamp, reverse=True)
+    if before:
+        rows = [item for item in rows if _stamp(item) < before]
+    return rows[: max(1, min(limit, 50))]
+
+
+async def _list_from_firestore(db, uid: str) -> list[dict]:
+    """Consulta por dono. O indice uid + last_message_at cobre a ordenacao no Firestore."""
+    from firebase_admin import firestore
+
+    collection = db.collection(COLLECTION)
+    try:
+        docs = (
+            collection.where("uid", "==", uid)
+            .order_by("last_message_at", direction=firestore.Query.DESCENDING)
+            .limit(50)
+            .get(timeout=5.0)
+        )
+    except Exception:
+        logger.warning("Consulta ordenada do historico falhou. Usando a lista do usuario.", exc_info=True)
         try:
-            docs = db.collection(COLLECTION).where("uid", "==", uid).get(timeout=5.0)
+            docs = collection.where("uid", "==", uid).limit(50).get(timeout=5.0)
         except Exception as exc:
             logger.exception("Falha ao listar conversas do tutor.")
             raise ConversationStoreError("Nao foi possivel listar as conversas do tutor.") from exc
-        rows = []
-        for doc in docs:
-            data = doc.to_dict() or {}
-            data["conversation_id"] = doc.id
-            rows.append(data)
-    rows.sort(key=lambda item: item.get("updated_at") or "", reverse=True)
+    rows = []
+    for doc in docs:
+        data = doc.to_dict() or {}
+        if not _belongs(data, uid):
+            continue
+        data["conversation_id"] = doc.id
+        rows.append(data)
     return rows
 
 
@@ -189,6 +299,11 @@ async def append_turn(
     if not conversation.get("preview"):
         conversation["preview"] = _preview(user_message)
     conversation["updated_at"] = assistant_doc["created_at"]
+    conversation["last_message_at"] = assistant_doc["created_at"]
+    conversation["user_id"] = conversation.get("uid") or conversation.get("user_id")
+    conversation["tutor_mode"] = conversation.get("mode")
+    if not conversation.get("title_custom"):
+        conversation["title"] = friendly_title(conversation, user_message)
 
     db = firebase_service.get_db()
     if db is None:
@@ -224,3 +339,27 @@ async def _save_conversation(conversation: dict, *, is_new: bool) -> None:
         raise ConversationStoreError("Nao foi possivel criar a conversa do tutor.") from exc
     if is_new:
         return
+
+
+async def update_conversation(
+    conversation_id: str,
+    uid: str,
+    *,
+    title: str | None = None,
+    archived: bool | None = None,
+) -> dict | None:
+    conversation = await get_conversation(conversation_id, uid)
+    if conversation is None:
+        return None
+    if title is not None:
+        conversation["title"] = " ".join(title.split())[:80]
+        conversation["title_custom"] = True
+    if archived is not None:
+        conversation["archived"] = bool(archived)
+    conversation["updated_at"] = _now()
+    conversation["user_id"] = uid
+    conversation["tutor_mode"] = conversation.get("mode")
+    await _save_conversation(conversation, is_new=False)
+    if firebase_service.get_db() is None:
+        _conversations[conversation_id] = dict(conversation)
+    return conversation

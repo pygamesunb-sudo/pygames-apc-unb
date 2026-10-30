@@ -1,11 +1,12 @@
 """Cliente Gemini dos Tutores.
 
 Usa a mesma API e o mesmo modelo da geracao de exercicios.
-A chave e settings.gemini_api_key (GEMINI_API_KEY). Sem ela, os tutores nao chamam a API.
+A chave pode vir da opcao do frontend ou de GEMINI_API_KEY. Sem nenhuma das duas, os tutores nao chamam a API.
 """
 
 from __future__ import annotations
 
+import asyncio
 import logging
 
 import httpx
@@ -20,6 +21,15 @@ GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/{mode
 
 def gemini_api_key() -> str:
     return (settings.gemini_api_key or "").strip()
+
+
+def resolve_gemini_key(request_key: str | None = None, use_custom_key: bool = False) -> str:
+    """A chave ligada no frontend tem prioridade. GEMINI_API_KEY fica como reserva local."""
+    if use_custom_key:
+        custom = (request_key or "").strip()
+        if custom:
+            return custom
+    return gemini_api_key()
 
 
 def resolve_tutor_model(configured: str | None = None) -> str:
@@ -55,6 +65,17 @@ def split_for_gemini(messages: list[dict]) -> tuple[str, list[dict]]:
     return "\n\n".join(system_parts), contents
 
 
+def _provider_message(response: httpx.Response, api_key: str) -> str:
+    """Trecho seguro do erro da Gemini. A chave nao entra no log."""
+    try:
+        message = str((response.json().get("error") or {}).get("message") or "")
+    except ValueError:
+        message = ""
+    if api_key:
+        message = message.replace(api_key, "[redacted]")
+    return message[:240]
+
+
 def _status_error(status_code: int) -> TutorProviderError:
     if status_code == 401:
         return TutorProviderError("auth", status_code)
@@ -82,8 +103,9 @@ class GeminiProvider:
         temperature: float = 0.4,
         model: str | None = None,
         timeout: float = 60.0,
+        api_key: str | None = None,
     ) -> str:
-        api_key = gemini_api_key()
+        api_key = (gemini_api_key() if api_key is None else api_key).strip()
         if not api_key:
             raise TutorAINotConfigured()
         chosen = resolve_tutor_model(model)
@@ -95,22 +117,39 @@ class GeminiProvider:
         if system_instruction:
             payload["systemInstruction"] = {"parts": [{"text": system_instruction}]}
         url = GEMINI_ENDPOINT.format(model=chosen)
-        try:
-            async with httpx.AsyncClient(timeout=timeout, transport=self._transport) as client:
-                response = await client.post(
-                    url,
-                    headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
-                    json=payload,
+        response = None
+        for attempt in range(2):
+            try:
+                async with httpx.AsyncClient(timeout=timeout, transport=self._transport) as client:
+                    response = await client.post(
+                        url,
+                        headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
+                        json=payload,
+                    )
+            except httpx.TimeoutException:
+                logger.warning("Tutor Gemini excedeu o tempo model=%s", chosen)
+                raise TutorProviderError("timeout") from None
+            except httpx.HTTPError:
+                logger.warning("Tutor Gemini falhou na conexao model=%s", chosen)
+                raise TutorProviderError("unavailable") from None
+            if response.status_code == 503 and attempt == 0:
+                logger.warning(
+                    "Tutor Gemini ocupado model=%s http=503 detalhe=%s",
+                    chosen,
+                    _provider_message(response, api_key),
                 )
-        except httpx.TimeoutException:
-            logger.warning("Tutor Gemini excedeu o tempo model=%s", chosen)
-            raise TutorProviderError("timeout") from None
-        except httpx.HTTPError:
-            logger.warning("Tutor Gemini falhou na conexao model=%s", chosen)
-            raise TutorProviderError("unavailable") from None
-        if response.status_code >= 400:
-            mapped = _status_error(response.status_code)
-            logger.warning("Tutor Gemini recusou a chamada code=%s http=%s", mapped.code, mapped.status)
+                await asyncio.sleep(0.8)
+                continue
+            break
+        if response is None or response.status_code >= 400:
+            status_code = 503 if response is None else response.status_code
+            mapped = _status_error(status_code)
+            logger.warning(
+                "Tutor Gemini recusou a chamada code=%s http=%s detalhe=%s",
+                mapped.code,
+                mapped.status,
+                "" if response is None else _provider_message(response, api_key),
+            )
             raise mapped
         text = _response_text(response)
         _log_usage(chosen, response)

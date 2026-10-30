@@ -81,6 +81,8 @@ const AUTH_ERRORS = {
   'auth/operation-not-allowed': 'Login por e-mail não está habilitado no Firebase Console.',
   'auth/too-many-requests': 'Muitas tentativas. Aguarde um momento e tente novamente.',
   'auth/popup-closed-by-user': 'Login cancelado.',
+  'auth/popup-blocked': 'O navegador bloqueou a janela do Google. Permita pop-ups para este site e tente de novo.',
+  'auth/unauthorized-domain': 'Abra o projeto em http://localhost:5173. O Firebase não aceita login por 127.0.0.1.',
   'auth/network-request-failed': 'Erro de conexão. Verifique sua internet.',
 };
 
@@ -112,10 +114,12 @@ export async function loginWithGoogle(rememberMe = true) {
     }, 100);
     return { user: mockAuth.currentUser };
   }
-  await applyPersistence(rememberMe);
   const provider = createGoogleProvider();
+  const persistence = applyPersistence(rememberMe);
   try {
-    return await signInWithPopup(ensureAuth(), provider);
+    const result = await signInWithPopup(ensureAuth(), provider);
+    await persistence;
+    return result;
   } catch (error) {
     throw new Error(mapAuthError(error));
   }

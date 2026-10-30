@@ -1,4 +1,5 @@
 import { ArrowLeft, Plus, X } from 'lucide-react';
+import TutorFocusToggle from './TutorFocusToggle';
 
 export default function TutorHeader({
   title,
@@ -23,6 +24,7 @@ export default function TutorHeader({
           {description && <p>{description}</p>}
         </div>
         <div className="tutor-header__actions">
+          <TutorFocusToggle />
           {onNewConversation && (
             <button
               type="button"

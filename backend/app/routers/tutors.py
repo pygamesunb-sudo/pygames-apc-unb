@@ -1,13 +1,15 @@
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.dependencies import get_current_user
 from app.models.tutors import (
     TutorChatRequest,
     TutorChatResponse,
+    TutorConversationCreate,
     TutorConversationDetail,
     TutorConversationSummary,
+    TutorConversationUpdate,
     TutorExercise,
     TutorExerciseRequest,
 )
@@ -16,7 +18,12 @@ from app.services.ai.errors import TutorProviderError
 from app.services.ai.usage import DailyLimitExceeded, UsageStoreError
 from app.services.tutors import service as tutor_service
 from app.services.tutors.history import ConversationStoreError
-from app.services.tutors.service import ConversationNotFound, TutorAINotConfigured, TutorModeConflict
+from app.services.tutors.service import (
+    ConversationNotFound,
+    TutorAINotConfigured,
+    TutorExerciseInvalid,
+    TutorModeConflict,
+)
 
 router = APIRouter(prefix="/api/tutors", tags=["tutors"])
 logger = logging.getLogger(__name__)
@@ -101,6 +108,11 @@ async def chat(body: TutorChatRequest, user: dict = Depends(get_current_user)):
                 "limit": exc.limit,
             },
         ) from exc
+    except TutorExerciseInvalid as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="tutor_exercise_invalid",
+        ) from exc
     except TutorModeConflict as exc:
         raise HTTPException(
             status_code=409,
@@ -123,9 +135,53 @@ async def chat(body: TutorChatRequest, user: dict = Depends(get_current_user)):
 
 
 @router.get("/conversations", response_model=list[TutorConversationSummary])
-async def list_conversations(user: dict = Depends(get_current_user)):
+async def list_conversations(
+    user: dict = Depends(get_current_user),
+    include_archived: bool = False,
+    limit: int = Query(default=20, ge=1, le=50),
+    before: str | None = None,
+):
     try:
-        return await tutor_service.list_user_conversations(user.get("uid") or "")
+        return await tutor_service.list_user_conversations(
+            user.get("uid") or "",
+            include_archived=include_archived,
+            limit=limit,
+            before=before,
+        )
+    except ConversationStoreError as exc:
+        raise _store_error(exc) from exc
+
+
+@router.post("/conversations", response_model=TutorConversationSummary, status_code=201)
+async def create_conversation(body: TutorConversationCreate, user: dict = Depends(get_current_user)):
+    try:
+        return await tutor_service.create_user_conversation(
+            user.get("uid") or "",
+            body.mode,
+            body.surface,
+        )
+    except ConversationStoreError as exc:
+        raise _store_error(exc) from exc
+
+
+@router.patch("/conversations/{conversation_id}", response_model=TutorConversationSummary)
+async def update_conversation(
+    conversation_id: str,
+    body: TutorConversationUpdate,
+    user: dict = Depends(get_current_user),
+):
+    if not conversation_id or "/" in conversation_id or len(conversation_id) > 128:
+        raise HTTPException(status_code=404, detail="Conversa nao encontrada.")
+    if body.title is None and body.archived is None:
+        raise HTTPException(status_code=422, detail="Nada para atualizar.")
+    try:
+        return await tutor_service.update_user_conversation(
+            user.get("uid") or "",
+            conversation_id,
+            body,
+        )
+    except ConversationNotFound as exc:
+        raise HTTPException(status_code=404, detail="Conversa nao encontrada.") from exc
     except ConversationStoreError as exc:
         raise _store_error(exc) from exc
 

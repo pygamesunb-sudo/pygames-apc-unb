@@ -4,7 +4,7 @@
 2. dica
 3. explicacao conceitual
 4. exemplo semelhante
-5. solucao somente quando o aluno ja passou pela etapa 4 e pede ajuda final
+5. caminho detalhado, sem entregar o programa completo
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ STAGE_GUIDING_QUESTION = 1
 STAGE_HINT = 2
 STAGE_CONCEPT = 3
 STAGE_SIMILAR_EXAMPLE = 4
-STAGE_SOLUTION = 5
+STAGE_SOLUTION = 5  # caminho detalhado; nao autoriza o programa completo
 
 STAGE_NAMES = {
     STAGE_GUIDING_QUESTION: "pergunta_orientadora",

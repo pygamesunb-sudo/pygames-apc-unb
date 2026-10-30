@@ -7,6 +7,7 @@ import logging
 import httpx
 
 from app.services.ai.client import chat_completion
+from app.services.ai.gemini_client import resolve_gemini_key
 
 logger = logging.getLogger(__name__)
 
@@ -158,7 +159,7 @@ async def _call_reviewer_gemini_api(messages: list[dict], api_key: str) -> dict:
             "parts": [{"text": "Revise o problema."}]
         })
         
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key={api_key}"
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent"
     
     payload = {
         "contents": contents,
@@ -176,7 +177,11 @@ async def _call_reviewer_gemini_api(messages: list[dict], api_key: str) -> dict:
     logger.info("Revisor chamando a API direta do Gemini 3.1 Flash-Lite com a chave do usuario.")
     
     async with httpx.AsyncClient(timeout=60.0) as client:
-        response = await client.post(url, json=payload)
+        response = await client.post(
+            url,
+            headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
+            json=payload,
+        )
         response.raise_for_status()
         data = response.json()
         
@@ -275,8 +280,9 @@ async def review_problem(
         },
     ]
 
-    if use_custom_key and gemini_api_key:
-        review_result = await _call_reviewer_gemini_api(messages, api_key=gemini_api_key)
+    chosen_key = resolve_gemini_key(gemini_api_key, use_custom_key)
+    if chosen_key:
+        review_result = await _call_reviewer_gemini_api(messages, api_key=chosen_key)
     else:
         review_result = await _call_reviewer_llm(messages)
 

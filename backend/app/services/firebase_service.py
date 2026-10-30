@@ -49,8 +49,8 @@ def ensure_firebase_app() -> None:
     if not project_id:
         raise RuntimeError("FIREBASE_PROJECT_ID ausente.")
     options = {"projectId": project_id}
-    cred_path = settings.fb_credentials_path
-    if os.path.exists(cred_path):
+    cred_path = settings.resolved_credentials_path()
+    if cred_path and os.path.exists(cred_path):
         firebase_admin.initialize_app(credentials.Certificate(cred_path), options)
         logger.info("Firebase Admin SDK inicializado com credenciais do arquivo.")
         return
@@ -71,8 +71,8 @@ def get_db():
     if _db is None:
         try:
             ensure_firebase_app()
-            cred_path = settings.fb_credentials_path
-            if not os.path.exists(cred_path) and not _adc_available():
+            cred_path = settings.resolved_credentials_path()
+            if not (cred_path and os.path.exists(cred_path)) and not _adc_available():
                 raise RuntimeError("Firestore local sem credencial; usando memoria.")
             _db = firestore.client()
         except Exception as e:

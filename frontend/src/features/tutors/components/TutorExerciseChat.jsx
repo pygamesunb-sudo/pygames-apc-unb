@@ -9,9 +9,11 @@ export default function TutorExerciseChat({
   error,
   onDismissError,
   onSend,
+  inputRef: inputRefProp,
 }) {
   const inputId = useId();
-  const inputRef = useRef(null);
+  const localRef = useRef(null);
+  const inputRef = inputRefProp || localRef;
   const logRef = useRef(null);
 
   useEffect(() => {

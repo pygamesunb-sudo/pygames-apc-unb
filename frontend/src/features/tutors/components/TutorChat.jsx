@@ -15,6 +15,8 @@ export default function TutorChat({
   onClose,
   active = true,
   contextNote = null,
+  initialConversationId,
+  onConversationChange,
 }) {
   const inputId = useId();
   const titleId = useId();
@@ -22,13 +24,18 @@ export default function TutorChat({
   const logRef = useRef(null);
   const {
     messages,
+    conversationId,
     isSending,
     isLoadingHistory,
     error,
     sendMessage,
     startNewConversation,
     dismissError,
-  } = useTutorChat({ mode, surface, problemId, code });
+  } = useTutorChat({ mode, surface, problemId, code, initialConversationId });
+
+  useEffect(() => {
+    if (conversationId) onConversationChange?.(conversationId);
+  }, [conversationId, onConversationChange]);
 
   useEffect(() => {
     if (active) inputRef.current?.focus();

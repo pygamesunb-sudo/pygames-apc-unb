@@ -2,38 +2,51 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildExerciseChatPayload,
+  buildGeneratePayload,
   extractPythonCode,
-  isTutorExercise,
+  isGeneratedExercise,
 } from './tutorExerciseModel.js';
 
 const exercise = {
-  titulo: 'Ultima carta',
-  tema: 'Listas',
-  dificuldade: 'Fácil',
-  enunciado: 'Guarde cinco inteiros e mostre o ultimo.',
-  entrada: 'Cinco inteiros.',
-  saida: 'O quinto inteiro.',
-  exemploEntrada: '1\n2\n3\n4\n9',
-  exemploSaida: '9',
-  conceitos: ['listas'],
+  title: 'Entrada na Montanha-Russa',
+  story: 'Você trabalha no parque LoopLand.',
+  statement: 'Leia a altura e decida se a pessoa pode entrar.',
+  topic: 'Condicionais',
+  difficulty: 'Fácil',
+  input: { description: 'Um inteiro.', type: 'número inteiro' },
+  output: { description: 'PODE ENTRAR ou NAO PODE ENTRAR.', type: 'texto' },
+  examples: [{ input: '145', output: 'PODE ENTRAR', explanation: '145 passa de 140.' }],
+  constraints: [],
+  hints: ['Compare com 140.'],
 };
 
-test('aceita somente exercicio completo', () => {
-  assert.equal(isTutorExercise(exercise), true);
-  assert.equal(isTutorExercise({ ...exercise, enunciado: '  ' }), false);
-  assert.equal(isTutorExercise({ ...exercise, conceitos: [] }), false);
+test('aceita somente exercicio publico completo', () => {
+  assert.equal(isGeneratedExercise(exercise), true);
+  assert.equal(isGeneratedExercise({ ...exercise, statement: '  ' }), false);
+  assert.equal(isGeneratedExercise({ ...exercise, reference_solution: 'print(1)' }), false);
 });
 
-test('payload do chat leva o exercicio fixado e o codigo colado', () => {
-  const message = 'Meu codigo:\n```python\ndef dobro(n):\n    return n\n```';
-  const payload = buildExerciseChatPayload({
-    conversationId: 'conv-1',
-    exercise,
-    message,
+test('payloads separam geracao e conversa do exercicio fixado', () => {
+  const generated = buildGeneratePayload({
+    theme: 'espaço',
+    topic: 'condicionais',
+    difficulty: 'facil',
+    inputType: 'inteiro',
+    outputType: 'texto',
   });
-  assert.equal(payload.mode, 'exercise');
-  assert.equal(payload.exercise.titulo, 'Ultima carta');
+  assert.equal(generated.mode, 'exercise_generator');
+  assert.equal(generated.action, 'generate');
+  assert.equal(generated.theme, 'espaço');
+  assert.equal(generated.focus_mode, false);
+  assert.equal(generated.prompt, undefined);
+
+  const message = 'Meu codigo:\n```python\ndef dobro(n):\n    return n\n```';
+  const payload = buildExerciseChatPayload({ conversationId: 'conv-1', message });
+  assert.equal(payload.mode, 'exercise_generator');
+  assert.equal(payload.action, 'chat');
   assert.equal(payload.conversation_id, 'conv-1');
+  assert.equal(payload.focus_mode, false);
+  assert.equal(payload.prompt, undefined);
   assert.match(payload.code, /def dobro/);
-  assert.equal(extractPythonCode('Não entendi o enunciado'), '');
+  assert.equal(extractPythonCode('Quero uma dica'), '');
 });

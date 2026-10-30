@@ -1,8 +1,8 @@
 """Contador diario de mensagens dos tutores.
 
-O limite e por usuario e por dia UTC. Se o Firestore nao puder ser lido,
-a chamada e recusada: melhor falhar fechado do que gastar sem controle.
-Em teste local, sem Firestore, o contador fica so na memoria do processo.
+O limite e por usuario e por dia UTC. Se o Firestore existir e falhar,
+a chamada e recusada. Sem o arquivo de credencial, o contador fica na
+memoria deste processo.
 """
 
 from __future__ import annotations
@@ -40,10 +40,26 @@ def _today() -> str:
     return datetime.now(timezone.utc).date().isoformat()
 
 
+_memory_notice = False
+
+
 def _memory_allowed() -> bool:
+    """Memoria nos testes e quando esta maquina nao tem credencial do Firestore."""
+    global _memory_notice
     if settings.testing_bypass_auth:
         return True
-    return os.getenv("TESTING_BYPASS_AUTH", "").strip().lower() == "true"
+    if os.getenv("TESTING_BYPASS_AUTH", "").strip().lower() == "true":
+        return True
+    credentials = settings.resolved_credentials_path()
+    if credentials and os.path.isfile(credentials):
+        return False
+    if not _memory_notice:
+        _memory_notice = True
+        logger.warning(
+            "Contador dos tutores em memoria neste processo. "
+            "Sem firebase_credentials.json ele nao sobrevive a um reinicio."
+        )
+    return True
 
 
 def _snapshot(uid: str, date: str, count: int) -> UsageSnapshot:

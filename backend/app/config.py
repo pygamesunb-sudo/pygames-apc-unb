@@ -30,6 +30,15 @@ class Settings(BaseSettings):
     def beecrowd_configured(self) -> bool:
         return bool((self.beecrowd_api_email or "").strip() and (self.beecrowd_api_password or "").strip())
 
+    def resolved_credentials_path(self) -> str:
+        """Caminho da conta de servico. Caminho relativo vale a partir da pasta backend."""
+        raw = (self.fb_credentials_path or "").strip()
+        if not raw:
+            return ""
+        if os.path.isabs(raw):
+            return raw
+        return os.path.normpath(os.path.join(BASE_DIR, raw))
+
     def resolved_firebase_project_id(self) -> str:
         """ID do projeto atual. Em Cloud Functions o GCP injeta GCLOUD_PROJECT."""
         return (
@@ -56,8 +65,9 @@ class Settings(BaseSettings):
             # Verifica se o Firebase Admin SDK ja foi inicializado por este ou outro modulo
             if not firebase_admin._apps:
                 try:
-                    if os.path.exists(self.fb_credentials_path):
-                        cred = credentials.Certificate(self.fb_credentials_path)
+                    credentials_path = self.resolved_credentials_path()
+                    if credentials_path and os.path.exists(credentials_path):
+                        cred = credentials.Certificate(credentials_path)
                         firebase_admin.initialize_app(cred)
                     else:
                         try:

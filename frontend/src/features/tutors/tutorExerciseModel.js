@@ -1,13 +1,13 @@
 export const EXERCISE_TOPICS = [
   { id: 'entrada_saida', label: 'Entrada e saída' },
   { id: 'variaveis', label: 'Variáveis' },
-  { id: 'strings', label: 'Strings' },
+  { id: 'operadores', label: 'Operadores' },
   { id: 'condicionais', label: 'Condicionais' },
   { id: 'while', label: 'While' },
   { id: 'for', label: 'For' },
+  { id: 'strings', label: 'Strings' },
   { id: 'listas', label: 'Listas' },
   { id: 'funcoes', label: 'Funções' },
-  { id: 'recursao', label: 'Recursão' },
 ];
 
 export const EXERCISE_DIFFICULTIES = [
@@ -16,36 +16,54 @@ export const EXERCISE_DIFFICULTIES = [
   { id: 'dificil', label: 'Difícil' },
 ];
 
+export const THEME_SUGGESTIONS = [
+  'jogos',
+  'futebol',
+  'espaço',
+  'gatos',
+  'escola',
+  'cafeteria',
+  'RPG',
+  'música',
+  'filmes',
+];
+
+export const INPUT_TYPES = [
+  { id: 'inteiro', label: 'Número inteiro' },
+  { id: 'decimal', label: 'Número decimal' },
+  { id: 'string', label: 'String' },
+  { id: 'varios_numeros', label: 'Vários números' },
+  { id: 'lista', label: 'Lista' },
+  { id: 'automatico', label: 'Automático' },
+];
+
+export const OUTPUT_TYPES = [
+  { id: 'numero', label: 'Número' },
+  { id: 'texto', label: 'Texto' },
+  { id: 'booleano', label: 'Booleano/lógico' },
+  { id: 'lista', label: 'Lista' },
+  { id: 'automatico', label: 'Automático' },
+];
+
 export const EXERCISE_QUICK_ACTIONS = [
-  'Não entendi o enunciado',
-  'Explique a entrada e a saída',
-  'Que conteúdo preciso saber?',
-  'Me dê uma dica',
-  'Me ajude com a lógica',
-  'Me ajude a fazer o pseudocódigo',
-  'Analise meu código',
-  'Explique meu erro',
-  'Me dê outra dica',
+  { id: 'hint', label: 'Quero uma dica', message: 'Quero uma dica.' },
+  { id: 'think', label: 'Me ajude a pensar', message: 'Me ajude a pensar.' },
+  { id: 'bug', label: 'Meu código está dando erro', message: 'Meu código está dando erro.' },
+  { id: 'explain', label: 'Explique o exercício', message: 'Explique o exercício.' },
+  { id: 'another', label: 'Gerar outro exercício' },
+  { id: 'check', label: 'Verificar minha solução', message: 'Verifique minha solução.' },
 ];
 
-const REQUIRED_TEXT = [
-  'titulo',
-  'tema',
-  'dificuldade',
-  'enunciado',
-  'entrada',
-  'saida',
-  'exemploEntrada',
-  'exemploSaida',
-];
-
-export function isTutorExercise(value) {
+export function isGeneratedExercise(value) {
   if (!value || typeof value !== 'object') return false;
-  const textOk = REQUIRED_TEXT.every((key) => typeof value[key] === 'string' && value[key].trim());
-  const conceptsOk = Array.isArray(value.conceitos)
-    && value.conceitos.length > 0
-    && value.conceitos.every((item) => typeof item === 'string' && item.trim());
-  return textOk && conceptsOk;
+  const textOk = ['title', 'story', 'statement', 'topic', 'difficulty'].every(
+    (key) => typeof value[key] === 'string' && value[key].trim(),
+  );
+  const ioOk = value.input?.description && value.output?.description;
+  const example = Array.isArray(value.examples) ? value.examples[0] : null;
+  const exampleOk = example && String(example.input).trim() && String(example.output).trim();
+  const hidden = value.reference_solution == null && value.solution_explanation == null;
+  return textOk && ioOk && exampleOk && hidden;
 }
 
 export function extractPythonCode(text) {
@@ -57,28 +75,31 @@ export function extractPythonCode(text) {
   return '';
 }
 
-export function buildExerciseChatPayload({ conversationId, exercise, message }) {
+export function buildGeneratePayload({ theme, topic, difficulty, inputType, outputType, focusMode = false }) {
+  return {
+    mode: 'exercise_generator',
+    action: 'generate',
+    surface: 'page',
+    message: 'Gerar exercício',
+    theme,
+    topic,
+    difficulty,
+    input_type: inputType,
+    output_type: outputType,
+    focus_mode: Boolean(focusMode),
+  };
+}
+
+export function buildExerciseChatPayload({ conversationId, message, focusMode = false }) {
   const payload = {
-    mode: 'exercise',
+    mode: 'exercise_generator',
+    action: 'chat',
     surface: 'page',
     message,
-    exercise,
+    conversation_id: conversationId,
+    focus_mode: Boolean(focusMode),
   };
-  if (conversationId) payload.conversation_id = conversationId;
   const code = extractPythonCode(message);
   if (code) payload.code = code;
   return payload;
-}
-
-export function introMessage(exercise) {
-  return {
-    message_id: `intro-${exercise.titulo}`,
-    role: 'assistant',
-    content: [
-      'Vamos começar entendendo o problema.',
-      '',
-      `O exercício "${exercise.titulo}" está fixado acima.`,
-      'Leia o enunciado e me diga, com suas palavras, o que o programa precisa fazer.',
-    ].join('\n'),
-  };
 }

@@ -1,29 +1,41 @@
-import { useId } from 'react';
+import { useId, useRef } from 'react';
 import TutorHeader from './TutorHeader';
-import TutorExercisePinnedCard from './TutorExercisePinnedCard';
-import TutorExerciseQuickActions from './TutorExerciseQuickActions';
-import TutorExerciseChat from './TutorExerciseChat';
+import ExerciseGeneratorForm from './ExerciseGeneratorForm';
+import GeneratedExerciseCard from './GeneratedExerciseCard';
+import TutorQuickActions from './TutorQuickActions';
+import ExerciseTutorChat from './ExerciseTutorChat';
 import { useExerciseTutor } from '../hooks/useExerciseTutor';
-import { EXERCISE_DIFFICULTIES, EXERCISE_TOPICS } from '../tutorExerciseModel';
+import { extractPythonCode } from '../tutorExerciseModel';
 
-export default function TutorExerciseGenerator({ title, description, onBack }) {
+export default function TutorExerciseGenerator({
+  title,
+  description,
+  onBack,
+  initialConversationId = null,
+  onConversationChange,
+}) {
   const titleId = useId();
-  const topicId = useId();
-  const {
-    currentExercise,
-    messages,
-    selectedTopic,
-    difficulty,
-    isGenerating,
-    isSending,
-    error,
-    setSelectedTopic,
-    setDifficulty,
-    generateExercise,
-    sendMessage,
-    dismissError,
-  } = useExerciseTutor();
-  const busy = isGenerating || isSending;
+  const chatRef = useRef(null);
+  const tutor = useExerciseTutor({ initialConversationId, onConversationChange });
+  const busy = tutor.isGenerating || tutor.isSending;
+
+  const handleAction = async (action) => {
+    if (action.id === 'another') {
+      await tutor.generateExercise();
+      return;
+    }
+    if (action.id === 'check') {
+      const draft = chatRef.current?.readDraft() || '';
+      const code = extractPythonCode(draft);
+      const message = code
+        ? `Verifique minha solução.\n\`\`\`python\n${code}\n\`\`\``
+        : 'Verifique minha solução. Vou colar o código na próxima mensagem se ainda não estiver aqui.';
+      const sent = await tutor.sendMessage(draft.trim() ? `${message}\n${draft}` : message);
+      if (sent) chatRef.current?.replaceDraft('');
+      return;
+    }
+    if (action.message) await tutor.sendMessage(action.message);
+  };
 
   return (
     <section className="tutor-chat tutor-exercise" aria-labelledby={titleId}>
@@ -33,66 +45,32 @@ export default function TutorExerciseGenerator({ title, description, onBack }) {
         description={description}
         onBack={onBack}
       />
-
-      <div className="card tutor-exercise__setup">
-        <label htmlFor={topicId}>Tema</label>
-        <select
-          id={topicId}
-          className="tutor-exercise__select"
-          value={selectedTopic}
-          onChange={(event) => setSelectedTopic(event.target.value)}
-          disabled={busy}
-        >
-          {EXERCISE_TOPICS.map((topic) => (
-            <option key={topic.id} value={topic.id}>{topic.label}</option>
-          ))}
-        </select>
-
-        <p className="tutor-exercise__label" id="tutor-exercise-difficulty">Dificuldade</p>
-        <div className="tutor-exercise__difficulties" role="group" aria-labelledby="tutor-exercise-difficulty">
-          {EXERCISE_DIFFICULTIES.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={`suggestion-filter-btn ${difficulty === item.id ? 'suggestion-filter-btn--active' : ''}`}
-              aria-pressed={difficulty === item.id}
-              onClick={() => setDifficulty(item.id)}
-              disabled={busy}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-
-        {!currentExercise && (
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={generateExercise}
-            disabled={busy || !selectedTopic}
-          >
-            {isGenerating ? 'Gerando exercício...' : 'Gerar exercício'}
-          </button>
-        )}
-      </div>
-
-      <TutorExercisePinnedCard
-        exercise={currentExercise}
-        onGenerate={generateExercise}
-        generating={isGenerating}
+      <ExerciseGeneratorForm
+        theme={tutor.theme}
+        topic={tutor.topic}
+        difficulty={tutor.difficulty}
+        inputType={tutor.inputType}
+        outputType={tutor.outputType}
+        busy={busy}
+        onTheme={tutor.setTheme}
+        onTopic={tutor.setTopic}
+        onDifficulty={tutor.setDifficulty}
+        onInputType={tutor.setInputType}
+        onOutputType={tutor.setOutputType}
+        onGenerate={tutor.generateExercise}
       />
-
-      {currentExercise && (
-        <TutorExerciseQuickActions onSend={sendMessage} disabled={busy} />
+      <GeneratedExerciseCard exercise={tutor.currentExercise} />
+      {tutor.currentExercise && (
+        <TutorQuickActions disabled={busy} onAction={handleAction} />
       )}
-
-      <TutorExerciseChat
-        messages={messages}
-        isSending={isSending}
-        disabled={!currentExercise || isGenerating}
-        error={error}
-        onDismissError={dismissError}
-        onSend={sendMessage}
+      <ExerciseTutorChat
+        ref={chatRef}
+        messages={tutor.messages}
+        isSending={tutor.isSending}
+        disabled={!tutor.currentExercise || tutor.isGenerating}
+        error={tutor.error}
+        onDismissError={tutor.dismissError}
+        onSend={tutor.sendMessage}
       />
     </section>
   );
