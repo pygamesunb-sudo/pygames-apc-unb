@@ -3,7 +3,7 @@
  * Branch comment: leitura academica do codigo, sem mudar o comportamento.
  */
 import React from 'react';
-import { Code, Sparkles, Trophy, History, LogOut, BookOpen, Bot, GraduationCap } from 'lucide-react';
+import { Code, Sparkles, Trophy, History, LogOut, BookOpen, Bot, GraduationCap, Shield } from 'lucide-react';
 import './BottomNav.css';
 
 
@@ -79,6 +79,14 @@ export default function BottomNav({
       >
         <BookOpen size={20} style={{ color: '#6366f1' }} />
         <span>Docs</span>
+      </button>
+
+      <button
+        className={`bottom-nav-item ${view === VIEW.PRIVACY ? 'bottom-nav-item--active' : ''}`}
+        onClick={() => handleNavClick(VIEW.PRIVACY)}
+      >
+        <Shield size={20} style={{ color: '#94a3b8' }} />
+        <span>Privacidade</span>
       </button>
 
       <button 

@@ -3,7 +3,7 @@
  * Branch comment: leitura academica do codigo, sem mudar o comportamento.
  */
 import React from 'react';
-import { Sparkles, Trophy, History, LogOut, BookOpen, Code2, Bot, GraduationCap } from 'lucide-react';
+import { Sparkles, Trophy, History, LogOut, BookOpen, Code2, Bot, GraduationCap, Shield } from 'lucide-react';
 import './Navbar.css';
 
 
@@ -119,6 +119,15 @@ export default function Navbar({
             >
               <BookOpen size={14} style={{ color: '#6366f1' }} />
               Docs API
+            </button>
+
+            <button
+              className={`btn-secondary ${view === VIEW.PRIVACY ? 'btn-active' : ''}`}
+              style={{ padding: '8px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+              onClick={() => handleNavClick(VIEW.PRIVACY)}
+            >
+              <Shield size={14} style={{ color: '#94a3b8' }} />
+              Privacidade
             </button>
 
             <button

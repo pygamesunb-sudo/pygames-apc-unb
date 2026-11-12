@@ -22,6 +22,7 @@ import MiniGame from './components/MiniGame';
 import Leaderboard from './components/Leaderboard';
 import SubmissionHistory from './components/SubmissionHistory';
 import ApiDocs from './pages/ApiDocs';
+import PrivacyPage from './pages/PrivacyPage';
 import LandingPage from './components/LandingPage';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
@@ -45,6 +46,7 @@ const VIEW = {
   LEARNING: 'aprendizados',
   HISTORY: 'history',
   DOCS: 'docs',
+  PRIVACY: 'privacidade',
   TUTORS: 'tutors',
   READY: 'exercicios-prontos'
 };
@@ -456,6 +458,10 @@ export default function App() {
               userProfile={userProfile}
               setUserProfile={setUserProfile}
             />
+          )}
+
+          {view === VIEW.PRIVACY && (
+            <PrivacyPage />
           )}
         </div>
       </main>
