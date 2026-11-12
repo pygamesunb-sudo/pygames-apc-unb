@@ -1,3 +1,7 @@
+/**
+ * componente compartilhado da interface (BottomNav.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import React from 'react';
 import { Code, Sparkles, Trophy, History, LogOut, BookOpen, Bot, GraduationCap } from 'lucide-react';
 import './BottomNav.css';

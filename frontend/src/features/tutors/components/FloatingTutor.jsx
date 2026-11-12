@@ -1,3 +1,7 @@
+/**
+ * peca de tela dos tutores (FloatingTutor.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import { useEffect, useRef, useState } from 'react';
 import { MessageCircle } from 'lucide-react';
 import TutorChat from './TutorChat';

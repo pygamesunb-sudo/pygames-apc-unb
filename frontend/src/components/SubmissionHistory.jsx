@@ -1,3 +1,7 @@
+/**
+ * componente compartilhado da interface (SubmissionHistory.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import { useState, useEffect } from 'react';
 import { History, ArrowLeft, Code, Eye, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import Editor from '@monaco-editor/react';

@@ -1,3 +1,7 @@
+/**
+ * peca de tela dos tutores (TutorFocusToggle.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import { useState } from 'react';
 import { readTutorFocusMode, writeTutorFocusMode } from '../tutorFocus';
 

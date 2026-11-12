@@ -1,3 +1,7 @@
+/**
+ * componente compartilhado da interface (ApiSpecsView.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import React from 'react';
 import './ApiSpecsView.css';
 import { 

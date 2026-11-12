@@ -1,3 +1,7 @@
+"""rota HTTP do backend FastAPI (users.py).
+
+Branch comment: leitura academica do codigo, sem mudar o comportamento.
+"""
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from typing import Literal

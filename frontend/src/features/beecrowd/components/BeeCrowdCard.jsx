@@ -1,3 +1,7 @@
+/**
+ * tela da integracao BeeCrowd (BeeCrowdCard.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 function officialUrl(url) {
   try {
     const parsed = new URL(url);

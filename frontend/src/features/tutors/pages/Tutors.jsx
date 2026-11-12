@@ -1,3 +1,7 @@
+/**
+ * pagina dos tutores agentes de aprendizagem (Tutors.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import { useCallback, useEffect, useState } from 'react';
 import { Brain, Bug, Code2, GraduationCap, ListChecks } from 'lucide-react';
 import TutorCard from '../components/TutorCard';
@@ -185,6 +189,28 @@ export default function Tutors() {
           <TutorCard key={tutor.mode} tutor={tutor} onSelect={openTutor} />
         ))}
       </div>
+      <section className="tutors-reference">
+        <h3>Referencial teórico</h3>
+        <p>
+          Os tutores usam estes dois livros como base, antes da personalidade de cada um.
+        </p>
+        <p>
+          Pense Python, 2ª edição, de Allen Downey, tradução de Jeffrey Elkner.
+          {' '}
+          <a href="https://penseallen.github.io/PensePython2e/" target="_blank" rel="noreferrer">
+            https://penseallen.github.io/PensePython2e/
+          </a>
+        </p>
+        <p>
+          Python Fluente, 2ª edição, de Luciano Ramalho, © 2023. Tradução de Fluent Python,
+          Second Edition, por Paulo C. e produção de Luciano Ramalho. Licença aberta
+          CC BY-NC-ND 4.0: crédito ao autor, sem uso comercial e sem republicar versão modificada.
+          {' '}
+          <a href="https://github.com/pythonfluente/pythonfluente2e" target="_blank" rel="noreferrer">
+            https://github.com/pythonfluente/pythonfluente2e
+          </a>
+        </p>
+      </section>
     </>
   );
 

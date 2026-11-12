@@ -1,3 +1,7 @@
+/**
+ * exercicios prontos no frontend (useReadyExercises.js).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import { useEffect, useState } from 'react';
 import { TOPIC_FILTERS, buildReadyExerciseQuery, matchesFilters } from '../readyExercisesModel';
 import {

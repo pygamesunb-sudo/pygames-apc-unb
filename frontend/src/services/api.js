@@ -1,3 +1,7 @@
+/**
+ * Funcoes que o frontend usa para falar com a API.
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import axios from 'axios';
 import { auth } from './firebase';
 

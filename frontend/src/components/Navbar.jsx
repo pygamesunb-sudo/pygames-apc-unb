@@ -1,3 +1,7 @@
+/**
+ * componente compartilhado da interface (Navbar.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import React from 'react';
 import { Sparkles, Trophy, History, LogOut, BookOpen, Code2, Bot, GraduationCap } from 'lucide-react';
 import './Navbar.css';

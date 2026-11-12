@@ -1,3 +1,7 @@
+/**
+ * peca de tela dos exercicios prontos (ReadyExerciseSkeleton.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 export default function ReadyExerciseSkeleton({ count = 6 }) {
   return (
     <div className="ready-exercises-grid" aria-hidden="true">

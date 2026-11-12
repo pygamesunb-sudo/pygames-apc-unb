@@ -1,3 +1,7 @@
+"""Le a configuracao do ambiente sem espalhar segredo pelo codigo.
+
+Branch comment: leitura academica do codigo, sem mudar o comportamento.
+"""
 import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 

@@ -1,3 +1,7 @@
+"""teste automatico do backend (test_endpoints.py).
+
+Branch comment: leitura academica do codigo, sem mudar o comportamento.
+"""
 import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, patch

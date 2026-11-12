@@ -1,3 +1,7 @@
+/**
+ * Login com Google e sessao do Firebase no navegador.
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import { initializeApp } from 'firebase/app';
 import {
   getAuth,

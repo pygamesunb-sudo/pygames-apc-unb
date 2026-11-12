@@ -1,3 +1,7 @@
+/**
+ * peca de tela dos tutores (TutorConversationMenu.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import { useEffect, useRef, useState } from 'react';
 
 export default function TutorConversationMenu({ title, archiveLabel = 'Arquivar', onRename, onArchive }) {

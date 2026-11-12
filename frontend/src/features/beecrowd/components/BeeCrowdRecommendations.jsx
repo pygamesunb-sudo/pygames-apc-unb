@@ -1,3 +1,7 @@
+/**
+ * tela da integracao BeeCrowd (BeeCrowdRecommendations.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import BeeCrowdCard from './BeeCrowdCard';
 
 export default function BeeCrowdRecommendations({ problems }) {

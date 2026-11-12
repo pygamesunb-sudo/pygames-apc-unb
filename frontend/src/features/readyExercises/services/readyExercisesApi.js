@@ -1,3 +1,7 @@
+/**
+ * exercicios prontos no frontend (readyExercisesApi.js).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import api from '../../../services/api';
 import { READY_COPY } from '../readyExercisesModel';
 

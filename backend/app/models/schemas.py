@@ -1,3 +1,7 @@
+"""modelo de dados trocado entre a API e o cliente (schemas.py).
+
+Branch comment: leitura academica do codigo, sem mudar o comportamento.
+"""
 from pydantic import BaseModel, Field
 from typing import Literal
 

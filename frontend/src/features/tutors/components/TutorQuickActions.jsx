@@ -1,3 +1,7 @@
+/**
+ * peca de tela dos tutores (TutorQuickActions.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import { EXERCISE_QUICK_ACTIONS } from '../tutorExerciseModel';
 
 export default function TutorQuickActions({ disabled, onAction }) {

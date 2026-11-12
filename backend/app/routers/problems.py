@@ -1,3 +1,7 @@
+"""rota HTTP do backend FastAPI (problems.py).
+
+Branch comment: leitura academica do codigo, sem mudar o comportamento.
+"""
 import asyncio
 import logging
 import uuid

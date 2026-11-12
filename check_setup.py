@@ -1,3 +1,7 @@
+"""Confere se o ambiente local tem o que o projeto precisa para rodar.
+
+Branch comment: leitura academica do codigo, sem mudar o comportamento.
+"""
 import os
 import sys
 import subprocess

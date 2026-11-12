@@ -1,3 +1,7 @@
+"""servico de dominio do backend (firebase_service.py).
+
+Branch comment: leitura academica do codigo, sem mudar o comportamento.
+"""
 import firebase_admin
 from firebase_admin import credentials, firestore
 import logging

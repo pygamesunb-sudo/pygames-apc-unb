@@ -1,3 +1,7 @@
+/**
+ * peca de tela dos exercicios prontos (ReadyExerciseCard.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import { Code2 } from 'lucide-react';
 import { cardContent } from '../readyExercisesModel';
 

@@ -1,3 +1,7 @@
+/**
+ * minijogo do fliperama (MobileDpad.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 export default function MobileDpad({ onDirection }) {
   const handlePress = (e, dx, dy) => {
     // Evita zoom, rolagem e outros comportamentos indesejados no celular

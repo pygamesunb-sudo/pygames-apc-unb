@@ -1,3 +1,7 @@
+"""Sobe a API FastAPI, libera o CORS do frontend e registra as rotas.
+
+Branch comment: leitura academica do codigo, sem mudar o comportamento.
+"""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
@@ -54,12 +58,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(problems.router)
-app.include_router(submissions.router)
-app.include_router(users.router)
-app.include_router(tutors.router)
-app.include_router(beecrowd.router)
-app.include_router(ready_exercises.router)
+# Cada router cuida de um dominio. O prefixo de URL fica no proprio arquivo.
+app.include_router(problems.router)         # geracao e validacao de exercicios
+app.include_router(submissions.router)      # execucao do codigo do aluno
+app.include_router(users.router)            # perfil, ranking e placar de aprendizados
+app.include_router(tutors.router)           # tutores agentes de aprendizagem
+app.include_router(beecrowd.router)         # fonte externa isolada
+app.include_router(ready_exercises.router)  # catalogo interno de exercicios prontos
 
 @app.on_event("startup")
 def startup_event():

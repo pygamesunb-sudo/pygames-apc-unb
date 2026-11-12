@@ -1,3 +1,7 @@
+/**
+ * cliente HTTP e dados da Docs API (apiAcademicPdfHelper.js).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 export function exportAcademicPDF(apiBaseUrl = 'http://localhost:8000') {
   const printWindow = window.open('', '_blank');
   if (!printWindow) return;

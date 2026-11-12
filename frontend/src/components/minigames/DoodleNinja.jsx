@@ -1,3 +1,7 @@
+/**
+ * minijogo do fliperama (DoodleNinja.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import { useRef, useEffect, useState, useCallback } from 'react';
 
 const CANVAS_W = 400;

@@ -1,3 +1,7 @@
+/**
+ * tela da integracao BeeCrowd (BeeCrowdStatus.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 export default function BeeCrowdStatus() {
   return (
     <section className="beecrowd-status" role="status">

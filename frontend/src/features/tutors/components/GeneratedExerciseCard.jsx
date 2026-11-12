@@ -1,3 +1,7 @@
+/**
+ * peca de tela dos tutores (GeneratedExerciseCard.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 export default function GeneratedExerciseCard({ exercise }) {
   if (!exercise) return null;
   const example = exercise.examples?.[0];

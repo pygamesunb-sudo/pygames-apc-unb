@@ -1,3 +1,7 @@
+/**
+ * exercicios prontos no frontend (readyExercisesModel.js).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 export const TOPIC_FILTERS = [
   { id: 'todos', label: 'Todos' },
   { id: 'entrada_saida', label: 'Entrada e Saída' },

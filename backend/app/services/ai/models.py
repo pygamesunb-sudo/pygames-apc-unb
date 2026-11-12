@@ -1,3 +1,7 @@
+"""chamada ao modelo de IA e controle de uso (models.py).
+
+Branch comment: leitura academica do codigo, sem mudar o comportamento.
+"""
 from typing import Literal
 
 from pydantic import BaseModel, Field

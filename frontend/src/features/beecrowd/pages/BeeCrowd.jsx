@@ -1,3 +1,7 @@
+/**
+ * tela da integracao BeeCrowd (BeeCrowd.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import { useEffect, useRef, useState } from 'react';
 import BeeCrowdFilters from '../components/BeeCrowdFilters';
 import BeeCrowdRecommendations from '../components/BeeCrowdRecommendations';

@@ -1,3 +1,7 @@
+/**
+ * tutores agentes de aprendizagem no frontend (tutorFocus.js).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 const STORAGE_KEY = 'tutor_focus_mode';
 
 export function readTutorFocusMode() {

@@ -1,3 +1,7 @@
+/**
+ * componente compartilhado da interface (MiniGame.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import { useState, useEffect, useCallback } from 'react';
 import DoodleNinja from './minigames/DoodleNinja';
 import SnakePy from './minigames/SnakePy';

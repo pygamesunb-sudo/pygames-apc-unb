@@ -1,3 +1,7 @@
+"""rota HTTP do backend FastAPI (submissions.py).
+
+Branch comment: leitura academica do codigo, sem mudar o comportamento.
+"""
 import subprocess
 import sys
 import tempfile

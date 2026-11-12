@@ -1,3 +1,7 @@
+/**
+ * peca de tela dos exercicios prontos (HomeReadyPractice.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import { useEffect, useState } from 'react';
 import ReadyExerciseCard from './ReadyExerciseCard';
 import ReadyExerciseSkeleton from './ReadyExerciseSkeleton';

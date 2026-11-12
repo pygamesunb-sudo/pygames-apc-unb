@@ -1,3 +1,7 @@
+/**
+ * estado de conversa dos tutores no navegador (useTutorChat.js).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   getTutorConversation,

@@ -1,3 +1,7 @@
+/**
+ * peca de tela dos tutores (TutorCard.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 export default function TutorCard({ tutor, onSelect }) {
   const Icon = tutor.icon;
   return (

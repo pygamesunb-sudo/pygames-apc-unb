@@ -1,3 +1,7 @@
+/**
+ * componente compartilhado da interface (LoadingView.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import React from 'react';
 import MiniGame from './MiniGame';
 import './LoadingView.css';

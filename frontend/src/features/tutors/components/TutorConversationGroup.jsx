@@ -1,3 +1,7 @@
+/**
+ * peca de tela dos tutores (TutorConversationGroup.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import TutorConversationItem from './TutorConversationItem';
 
 export default function TutorConversationGroup({ group, activeId, archiveLabel, onOpen, onRename, onArchive }) {

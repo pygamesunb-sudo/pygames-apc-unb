@@ -1,3 +1,7 @@
+/**
+ * peca de tela dos tutores (TutorMessage.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 export default function TutorMessage({ message }) {
   const isUser = message.role === 'user';
   return (

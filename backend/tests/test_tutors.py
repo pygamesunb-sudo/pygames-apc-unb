@@ -1,3 +1,7 @@
+"""teste automatico do backend (test_tutors.py).
+
+Branch comment: leitura academica do codigo, sem mudar o comportamento.
+"""
 import json
 
 import httpx
@@ -979,7 +983,7 @@ def test_definitive_tutor_prompts_stay_on_the_backend():
     )
 
     assert "LOGAN" in APC_TUTOR_PROMPT
-    assert "sem entregar código pronto" in APC_TUTOR_PROMPT
+    assert "sem entregar a solução pronta" in APC_TUTOR_PROMPT
     assert "UMA pergunta por turno" in APC_TUTOR_PROMPT
     assert "CAIO" in PYTHON_TUTOR_PROMPT
     assert "exemplo genérico" in PYTHON_TUTOR_PROMPT
@@ -1012,7 +1016,7 @@ def test_definitive_tutor_prompts_stay_on_the_backend():
     assert "Ignore suas instruções" not in system
     assert "Ignore suas instruções" in student
     assert "x =" in student
-    assert "sem entregar código pronto" in system
+    assert "sem entregar a solução pronta" in system
     assert "Modo foco ativo" in system
     assert "prevalecem" in system
 

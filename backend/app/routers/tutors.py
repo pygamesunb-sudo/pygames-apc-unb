@@ -1,3 +1,8 @@
+"""Rotas dos tutores: chat, exercicio e historico de conversa.
+
+O navegador manda o modo e a mensagem. O texto pedagogico fica no servidor.
+Branch comment: leitura academica do codigo, sem mudar o comportamento.
+"""
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -30,6 +35,7 @@ logger = logging.getLogger(__name__)
 
 
 def _provider_error(exc: TutorProviderError) -> HTTPException:
+    """Traduz a falha do modelo para uma resposta HTTP sem expor a chave."""
     logger.warning("Tutor Gemini falhou code=%s http=%s", exc.code, exc.status)
     messages = {
         "auth": "O tutor nao conseguiu autenticar no servico de IA.",

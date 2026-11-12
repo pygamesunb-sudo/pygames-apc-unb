@@ -1,3 +1,7 @@
+/**
+ * tela da integracao BeeCrowd (beecrowdApi.js).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import api from '../../../services/api';
 
 export function beecrowdErrorMessage(error) {

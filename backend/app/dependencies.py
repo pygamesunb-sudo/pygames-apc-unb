@@ -1,3 +1,7 @@
+"""Resolve o usuario logado a partir do token do Firebase.
+
+Branch comment: leitura academica do codigo, sem mudar o comportamento.
+"""
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from firebase_admin import auth

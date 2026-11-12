@@ -1,3 +1,7 @@
+/**
+ * peca de tela dos tutores (TutorConversationSidebar.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import { useState } from 'react';
 import TutorConversationGroup from './TutorConversationGroup';
 import TutorNewConversationButton from './TutorNewConversationButton';

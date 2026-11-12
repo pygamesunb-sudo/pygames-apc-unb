@@ -1,3 +1,7 @@
+/**
+ * componente compartilhado da interface (ApiAcademicView.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import React, { useState } from 'react';
 import {
   GraduationCap,

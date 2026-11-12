@@ -1,3 +1,7 @@
+/**
+ * tutores agentes de aprendizagem no frontend (tutorExerciseModel.js).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 export const EXERCISE_TOPICS = [
   { id: 'entrada_saida', label: 'Entrada e saída' },
   { id: 'variaveis', label: 'Variáveis' },

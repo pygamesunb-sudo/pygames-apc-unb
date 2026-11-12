@@ -1,3 +1,7 @@
+/**
+ * componente compartilhado da interface (Leaderboard.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import { useState, useEffect } from 'react';
 import { Trophy, Gamepad, Award, Terminal, ArrowLeft } from 'lucide-react';
 import { getLeaderboard } from '../services/api';

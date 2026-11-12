@@ -1,3 +1,7 @@
+"""modelo de dados trocado entre a API e o cliente (beecrowd.py).
+
+Branch comment: leitura academica do codigo, sem mudar o comportamento.
+"""
 from datetime import datetime
 from typing import Literal
 

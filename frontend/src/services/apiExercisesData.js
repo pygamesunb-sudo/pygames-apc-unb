@@ -1,3 +1,7 @@
+/**
+ * cliente HTTP e dados da Docs API (apiExercisesData.js).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 export const API_EXERCISES = {
   'gen-problem': [
     {

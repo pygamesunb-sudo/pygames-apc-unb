@@ -1,3 +1,7 @@
+/**
+ * componente compartilhado da interface (ProblemSolver.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import { Code, Layers, AlignLeft } from 'lucide-react';

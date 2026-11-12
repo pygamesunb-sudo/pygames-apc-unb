@@ -1,3 +1,7 @@
+/**
+ * minijogo do fliperama (SnakePy.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { SNAKE_LEVELS } from './snakeLevels';
 import MobileDpad from './MobileDpad';

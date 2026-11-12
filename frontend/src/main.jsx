@@ -1,3 +1,7 @@
+/**
+ * Monta o React na pagina.
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';

@@ -1,3 +1,7 @@
+/**
+ * tela da integracao BeeCrowd (BeeCrowdFilters.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 export default function BeeCrowdFilters({ filters, onChange, onSubmit, disabled }) {
   const update = (field) => (event) => onChange({ ...filters, [field]: event.target.value });
 

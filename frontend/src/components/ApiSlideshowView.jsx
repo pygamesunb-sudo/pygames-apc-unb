@@ -1,3 +1,7 @@
+/**
+ * componente compartilhado da interface (ApiSlideshowView.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import React, { useState, useEffect } from 'react';
 import {
   X,

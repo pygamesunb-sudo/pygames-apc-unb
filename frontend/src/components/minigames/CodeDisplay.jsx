@@ -1,3 +1,7 @@
+/**
+ * minijogo do fliperama (CodeDisplay.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 export default function CodeDisplay({ currentScript, currentTokenIdx }) {
   return (
     <div className="snake-code-display" style={{ userSelect: 'none', width: '100%', overflow: 'hidden' }}>

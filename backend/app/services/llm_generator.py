@@ -1,3 +1,7 @@
+"""servico de dominio do backend (llm_generator.py).
+
+Branch comment: leitura academica do codigo, sem mudar o comportamento.
+"""
 import httpx
 import json
 import random

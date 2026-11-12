@@ -1,3 +1,7 @@
+"""modelo de dados trocado entre a API e o cliente (ready_exercises.py).
+
+Branch comment: leitura academica do codigo, sem mudar o comportamento.
+"""
 from typing import Literal
 
 from pydantic import BaseModel, Field

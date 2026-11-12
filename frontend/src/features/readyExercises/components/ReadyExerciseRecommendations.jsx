@@ -1,3 +1,7 @@
+/**
+ * peca de tela dos exercicios prontos (ReadyExerciseRecommendations.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import ReadyExerciseCard from './ReadyExerciseCard';
 
 export default function ReadyExerciseRecommendations({ exercises, onOpen }) {

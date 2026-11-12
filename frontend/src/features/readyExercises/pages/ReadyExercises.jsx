@@ -1,3 +1,7 @@
+/**
+ * exercicios prontos no frontend (ReadyExercises.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import ReadyExerciseFilters from '../components/ReadyExerciseFilters';
 import ReadyExerciseRecommendations from '../components/ReadyExerciseRecommendations';
 import ReadyExerciseCard from '../components/ReadyExerciseCard';

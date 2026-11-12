@@ -1,3 +1,7 @@
+/**
+ * peca de tela dos tutores (ExerciseTutorChat.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import { forwardRef, useImperativeHandle, useRef } from 'react';
 import TutorExerciseChat from './TutorExerciseChat';
 

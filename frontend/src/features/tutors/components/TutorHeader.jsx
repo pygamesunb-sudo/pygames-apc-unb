@@ -1,3 +1,7 @@
+/**
+ * peca de tela dos tutores (TutorHeader.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import { ArrowLeft, Plus, X } from 'lucide-react';
 import TutorFocusToggle from './TutorFocusToggle';
 

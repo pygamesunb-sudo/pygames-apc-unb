@@ -1,3 +1,7 @@
+/**
+ * pagina principal da interface (Home.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import { useState, useEffect } from 'react';
 import { 
   Zap, 

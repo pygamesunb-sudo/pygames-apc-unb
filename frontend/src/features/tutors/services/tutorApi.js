@@ -1,3 +1,7 @@
+/**
+ * chamada HTTP dos tutores a partir do frontend (tutorApi.js).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import api from '../../../services/api';
 
 const LIMIT_MESSAGE = 'Você atingiu o limite de mensagens de hoje. Volte amanhã para continuar estudando.';

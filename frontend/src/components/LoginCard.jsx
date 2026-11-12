@@ -1,3 +1,7 @@
+/**
+ * componente compartilhado da interface (LoginCard.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import React from 'react';
 import { Terminal, Play, Trophy } from 'lucide-react';
 import './LoginCard.css';

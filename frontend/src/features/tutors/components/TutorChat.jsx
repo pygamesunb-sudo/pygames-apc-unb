@@ -1,3 +1,7 @@
+/**
+ * peca de tela dos tutores (TutorChat.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import { useEffect, useId, useRef } from 'react';
 import { Send } from 'lucide-react';
 import { useTutorChat } from '../hooks/useTutorChat';

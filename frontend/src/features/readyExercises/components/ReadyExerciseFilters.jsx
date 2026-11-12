@@ -1,3 +1,7 @@
+/**
+ * peca de tela dos exercicios prontos (ReadyExerciseFilters.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import { DIFFICULTY_FILTERS, PROGRESS_FILTERS } from '../readyExercisesModel';
 
 function FilterRow({ label, options, selected, onSelect }) {

@@ -1,3 +1,7 @@
+/**
+ * peca de tela dos exercicios prontos (ReadyExerciseTopics.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 export default function ReadyExerciseTopics({ topics, selected, onSelect }) {
   return (
     <div className="ready-filters__row" role="group" aria-label="Assunto">

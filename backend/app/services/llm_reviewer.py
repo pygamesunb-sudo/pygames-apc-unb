@@ -1,3 +1,7 @@
+"""servico de dominio do backend (llm_reviewer.py).
+
+Branch comment: leitura academica do codigo, sem mudar o comportamento.
+"""
 import subprocess
 import sys
 import tempfile

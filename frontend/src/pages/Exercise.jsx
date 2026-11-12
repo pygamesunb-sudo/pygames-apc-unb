@@ -1,3 +1,7 @@
+/**
+ * pagina principal da interface (Exercise.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import ProblemSolver from '../components/ProblemSolver';
 import { ArrowLeft } from 'lucide-react';
 import './Exercise.css';

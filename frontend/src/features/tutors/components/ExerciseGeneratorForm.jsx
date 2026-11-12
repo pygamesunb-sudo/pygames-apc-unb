@@ -1,3 +1,7 @@
+/**
+ * peca de tela dos tutores (ExerciseGeneratorForm.jsx).
+ * Branch comment: leitura academica do codigo, sem mudar o comportamento.
+ */
 import { useId } from 'react';
 import {
   EXERCISE_DIFFICULTIES,

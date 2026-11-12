@@ -158,6 +158,35 @@
   gap: 16px;
 }
 
+.tutors-reference {
+  margin-top: 28px;
+  padding: 16px 18px;
+  border: 1px solid rgba(167, 139, 250, 0.28);
+  border-radius: 12px;
+  background: rgba(167, 139, 250, 0.06);
+}
+
+.tutors-reference h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.tutors-reference p {
+  margin: 0 0 8px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.tutors-reference p:last-child {
+  margin-bottom: 0;
+}
+
+.tutors-reference a {
+  color: #c4b5fd;
+  word-break: break-all;
+}
+
 .tutor-card {
   display: flex;
   flex-direction: column;
