@@ -23,6 +23,7 @@ import Leaderboard from './components/Leaderboard';
 import SubmissionHistory from './components/SubmissionHistory';
 import ApiDocs from './pages/ApiDocs';
 import PrivacyPage from './pages/PrivacyPage';
+import SocraticPage from './pages/SocraticPage';
 import LandingPage from './components/LandingPage';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
@@ -47,6 +48,7 @@ const VIEW = {
   HISTORY: 'history',
   DOCS: 'docs',
   PRIVACY: 'privacidade',
+  SOCRATIC: 'tutores-socraticos',
   TUTORS: 'tutors',
   READY: 'exercicios-prontos'
 };
@@ -462,6 +464,10 @@ export default function App() {
 
           {view === VIEW.PRIVACY && (
             <PrivacyPage />
+          )}
+
+          {view === VIEW.SOCRATIC && (
+            <SocraticPage />
           )}
         </div>
       </main>

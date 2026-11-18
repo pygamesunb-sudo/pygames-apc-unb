@@ -3,7 +3,7 @@
  * Branch comment: leitura academica do codigo, sem mudar o comportamento.
  */
 import React from 'react';
-import { Code, Sparkles, Trophy, History, LogOut, BookOpen, Bot, GraduationCap, Shield } from 'lucide-react';
+import { Code, Sparkles, Trophy, History, LogOut, BookOpen, Bot, GraduationCap, Shield, MessageCircleQuestion } from 'lucide-react';
 import './BottomNav.css';
 
 
@@ -70,6 +70,14 @@ export default function BottomNav({
       >
         <Bot size={20} style={{ color: '#22d3ee' }} />
         <span style={{ lineHeight: 1.05, textAlign: 'center' }}>Tutores agentes de aprendizagem</span>
+      </button>
+
+      <button
+        className={`bottom-nav-item ${view === VIEW.SOCRATIC ? 'bottom-nav-item--active' : ''}`}
+        onClick={() => handleNavClick(VIEW.SOCRATIC)}
+      >
+        <MessageCircleQuestion size={20} style={{ color: '#a78bfa' }} />
+        <span style={{ lineHeight: 1.05, textAlign: 'center' }}>Método socrático</span>
       </button>
 
       {/* Docs Mobile Link */}
